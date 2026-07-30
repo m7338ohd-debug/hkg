@@ -12,6 +12,7 @@ import {
   Phone,
   FileText,
   User,
+  ArrowRight,
 } from 'lucide-react';
 import { useCashFlow } from '../../context/CashFlowContext';
 import type { TransactionType, PurchaseCategory, ExpenseCategory, WithdrawalPerson, WithdrawalReason, PaymentMethod } from '../../types';
@@ -40,16 +41,24 @@ export const TransactionFormScreen: React.FC<TransactionFormScreenProps> = ({
   const [notes, setNotes] = useState<string>('');
   const [date, setDate] = useState<string>(getTodayDateString());
 
-  const customerSummaries = getCustomerCreditSummaries(transactions);
+  const customerSummaries = getCustomerCreditSummaries(transactions).filter((c) => c.outstandingBalance > 0);
 
   // Filter existing customer list for autocomplete
   const filteredCustomers = customerSummaries.filter(
     (c) => customerName && c.customerName.toLowerCase().includes(customerName.toLowerCase())
   );
 
-  const handleSelectCustomer = (name: string, custPhone?: string) => {
+  const handleSelectCustomer = (name: string, custPhone?: string, balance?: number) => {
     setCustomerName(name);
     if (custPhone) setPhone(custPhone);
+    if (balance && type === 'credit_payment') setAmount(balance.toString());
+  };
+
+  const handleQuickReceiveRow = (name: string, custPhone?: string, dueAmount?: number) => {
+    setType('credit_payment');
+    setCustomerName(name);
+    if (custPhone) setPhone(custPhone);
+    if (dueAmount) setAmount(dueAmount.toString());
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -184,7 +193,7 @@ export const TransactionFormScreen: React.FC<TransactionFormScreenProps> = ({
                     <button
                       key={idx}
                       type="button"
-                      onClick={() => handleSelectCustomer(cust.customerName, cust.phone)}
+                      onClick={() => handleSelectCustomer(cust.customerName, cust.phone, cust.outstandingBalance)}
                       className="w-full text-left p-2.5 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs flex justify-between items-center cursor-pointer border-b border-slate-100 dark:border-slate-800 last:border-0"
                     >
                       <div>
@@ -380,6 +389,43 @@ export const TransactionFormScreen: React.FC<TransactionFormScreenProps> = ({
           SAVE TRANSACTION ({formatCurrency(parseFloat(amount) || 0, settings.currency)})
         </button>
       </form>
+
+      {/* Active Udhar Customers List (Visible when on Credit tabs) */}
+      {(type === 'credit_sale' || type === 'credit_payment') && customerSummaries.length > 0 && (
+        <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 shadow-xl border border-purple-200 dark:border-purple-900/50 space-y-3">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-700">
+            <h3 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+              <CreditCard className="w-4 h-4 text-purple-500" />
+              Active Outstanding Udhar Customers
+            </h3>
+            <span className="text-[10px] text-slate-400">Tap row to pre-fill</span>
+          </div>
+
+          <div className="divide-y divide-slate-100 dark:divide-slate-700/60 max-h-48 overflow-y-auto pr-1">
+            {customerSummaries.map((cust, idx) => (
+              <div key={idx} className="py-2.5 flex items-center justify-between gap-2 text-xs">
+                <div>
+                  <h4 className="font-bold text-slate-900 dark:text-white">{cust.customerName}</h4>
+                  {cust.phone && <p className="text-[10px] text-slate-400">{cust.phone}</p>}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="font-extrabold text-purple-600 dark:text-purple-400 font-mono">
+                    {formatCurrency(cust.outstandingBalance, settings.currency)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleQuickReceiveRow(cust.customerName, cust.phone, cust.outstandingBalance)}
+                    className="px-2.5 py-1 rounded-xl bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-bold text-[11px] hover:bg-purple-200 flex items-center gap-1 cursor-pointer"
+                  >
+                    Receive <ArrowRight className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

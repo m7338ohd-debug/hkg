@@ -15,6 +15,9 @@ import {
   BarChart3,
   Calendar,
   Sparkles,
+  CheckCircle2,
+  X,
+  Check,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -28,7 +31,8 @@ import {
   CartesianGrid,
 } from 'recharts';
 import { useCashFlow } from '../../context/CashFlowContext';
-import { formatCurrency, calculatePeriodSummary, getChartData, getCustomerCreditSummaries } from '../../utils/calculations';
+import { formatCurrency, calculatePeriodSummary, getChartData, getCustomerCreditSummaries, getTodayDateString } from '../../utils/calculations';
+import type { CustomerCreditSummary } from '../../types';
 import type { ActiveTab } from '../common/BottomNav';
 
 interface DashboardScreenProps {
@@ -37,21 +41,55 @@ interface DashboardScreenProps {
 }
 
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab }) => {
-  const { transactions, settings } = useCashFlow();
+  const { transactions, settings, addTransaction } = useCashFlow();
   const [chartTimeframe, setChartTimeframe] = useState<'7days' | '14days' | '30days'>('7days');
   const [selectedChart, setSelectedChart] = useState<'cashflow' | 'profit' | 'expenses'>('cashflow');
+
+  // Quick Collect Udhar Modal State
+  const [collectTarget, setCollectTarget] = useState<CustomerCreditSummary | null>(null);
+  const [customCollectAmount, setCustomCollectAmount] = useState<string>('');
+  const [payMethod, setPayMethod] = useState<'Cash' | 'UPI'>('Cash');
 
   const periodSummary = calculatePeriodSummary(transactions, settings);
   const today = periodSummary.today;
   const weekly = periodSummary.weekly;
   const monthly = periodSummary.monthly;
-  const customerUdharList = getCustomerCreditSummaries(transactions);
+  const customerUdharList = getCustomerCreditSummaries(transactions).filter((c) => c.outstandingBalance > 0);
 
   const daysCount = chartTimeframe === '7days' ? 7 : chartTimeframe === '14days' ? 14 : 30;
   const chartData = getChartData(transactions, daysCount);
 
+  const handleOpenCollectModal = (cust: CustomerCreditSummary) => {
+    setCollectTarget(cust);
+    setCustomCollectAmount(cust.outstandingBalance.toString());
+    setPayMethod('Cash');
+  };
+
+  const handleConfirmCollect = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!collectTarget) return;
+
+    const numAmount = parseFloat(customCollectAmount);
+    if (isNaN(numAmount) || numAmount <= 0) {
+      alert('Please enter a valid payment amount');
+      return;
+    }
+
+    addTransaction({
+      type: 'credit_payment',
+      amount: numAmount,
+      customerName: collectTarget.customerName,
+      phone: collectTarget.phone,
+      paymentMethod: payMethod,
+      date: getTodayDateString(),
+      notes: `Cleared Udhar balance (${payMethod})`,
+    });
+
+    setCollectTarget(null);
+  };
+
   return (
-    <div className="max-w-5xl mx-auto p-4 pb-24 space-y-5">
+    <div className="max-w-5xl mx-auto p-4 pb-28 space-y-5">
       {/* Hero Quick Action Strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
         <button
@@ -147,6 +185,56 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab }
           </div>
         </div>
       </div>
+
+      {/* Customer Udhar Summary & Quick Pay Section */}
+      {customerUdharList.length > 0 && (
+        <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 shadow-xl border border-purple-200 dark:border-purple-900/50 space-y-3">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-700">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-xl bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400">
+                <CreditCard className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">Active Udhar Customers</h3>
+                <p className="text-[10px] text-slate-400">Tap "Receive Payment" in row to collect & remove</p>
+              </div>
+            </div>
+            <span className="text-xs font-black text-purple-600 dark:text-purple-400">
+              Total Udhar: {formatCurrency(today.outstandingCredit, settings.currency)}
+            </span>
+          </div>
+
+          {/* List of Udhar Customers with row Receive button */}
+          <div className="divide-y divide-slate-100 dark:divide-slate-700/60 max-h-64 overflow-y-auto pr-1">
+            {customerUdharList.map((cust, i) => (
+              <div key={i} className="py-3 flex items-center justify-between gap-3 text-xs">
+                <div>
+                  <h4 className="font-bold text-sm text-slate-900 dark:text-white">{cust.customerName}</h4>
+                  {cust.phone && <p className="text-[11px] text-slate-400">{cust.phone}</p>}
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <span className="font-black text-purple-600 dark:text-purple-400 block text-sm font-mono">
+                      {formatCurrency(cust.outstandingBalance, settings.currency)}
+                    </span>
+                    <span className="text-[9px] uppercase font-bold text-slate-400">Udhar Due</span>
+                  </div>
+
+                  {/* Inline Quick Action Button */}
+                  <button
+                    onClick={() => handleOpenCollectModal(cust)}
+                    className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-md active:scale-95 transition-all flex items-center gap-1 cursor-pointer shrink-0"
+                  >
+                    <HandCoins className="w-3.5 h-3.5" />
+                    Receive
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Summary Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -392,34 +480,76 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab }
         </div>
       </div>
 
-      {/* Customer Udhar Summary List */}
-      {customerUdharList.length > 0 && (
-        <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 shadow-lg border border-slate-200/80 dark:border-slate-700/80 space-y-3">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-700">
-            <h3 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2">
-              <CreditCard className="w-4 h-4 text-purple-500" />
-              Customer Udhar Balances
-            </h3>
-            <span className="text-xs font-bold text-purple-600 dark:text-purple-400">
-              Total: {formatCurrency(today.outstandingCredit, settings.currency)}
-            </span>
-          </div>
+      {/* Quick Collect Udhar Modal */}
+      {collectTarget && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 w-full max-w-sm rounded-3xl p-5 shadow-2xl border border-slate-200 dark:border-slate-700 space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-700">
+              <h3 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                <HandCoins className="w-5 h-5 text-emerald-500" />
+                Receive Udhar Payment
+              </h3>
+              <button
+                onClick={() => setCollectTarget(null)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-          <div className="divide-y divide-slate-100 dark:divide-slate-700/60 max-h-48 overflow-y-auto pr-1">
-            {customerUdharList.slice(0, 5).map((cust, i) => (
-              <div key={i} className="py-2.5 flex items-center justify-between text-xs">
-                <div>
-                  <h4 className="font-bold text-slate-900 dark:text-white">{cust.customerName}</h4>
-                  {cust.phone && <p className="text-[10px] text-slate-400">{cust.phone}</p>}
-                </div>
-                <div className="text-right">
-                  <span className="font-black text-purple-600 dark:text-purple-400 block text-sm">
-                    {formatCurrency(cust.outstandingBalance, settings.currency)}
-                  </span>
-                  <span className="text-[10px] text-slate-400">Outstanding Udhar</span>
+            <form onSubmit={handleConfirmCollect} className="space-y-3.5">
+              <div className="p-3 bg-purple-50 dark:bg-purple-950/50 rounded-2xl border border-purple-200 dark:border-purple-800">
+                <span className="text-[10px] uppercase font-bold text-purple-600 dark:text-purple-400">Customer</span>
+                <h4 className="font-extrabold text-base text-slate-900 dark:text-white">{collectTarget.customerName}</h4>
+                {collectTarget.phone && <p className="text-xs text-slate-400">{collectTarget.phone}</p>}
+                <div className="mt-1 pt-1 border-t border-purple-200 dark:border-purple-800 flex justify-between text-xs font-bold text-purple-700 dark:text-purple-300">
+                  <span>Outstanding Due:</span>
+                  <span>{formatCurrency(collectTarget.outstandingBalance, settings.currency)}</span>
                 </div>
               </div>
-            ))}
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  Amount Received ({settings.currency})
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  required
+                  value={customCollectAmount}
+                  onChange={(e) => setCustomCollectAmount(e.target.value)}
+                  className="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-lg font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Payment Method</label>
+                <div className="flex gap-2">
+                  {(['Cash', 'UPI'] as const).map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setPayMethod(m)}
+                      className={`flex-1 py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+                        payMethod === m
+                          ? 'bg-emerald-600 text-white border-emerald-600'
+                          : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-black text-sm rounded-2xl shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 cursor-pointer active:scale-95 transition-all"
+              >
+                <CheckCircle2 className="w-5 h-5" />
+                CONFIRM PAYMENT RECEIVED ({formatCurrency(parseFloat(customCollectAmount) || 0, settings.currency)})
+              </button>
+            </form>
           </div>
         </div>
       )}
