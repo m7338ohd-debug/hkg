@@ -18,110 +18,7 @@ const getTodayString = (offsetDays = 0) => {
   return d.toISOString().split('T')[0];
 };
 
-export const SAMPLE_TRANSACTIONS: Transaction[] = [
-  {
-    id: 'tx_sample_1',
-    type: 'cash_sale',
-    amount: 1450,
-    date: getTodayString(0),
-    time: '08:30 AM',
-    notes: 'Morning counter cash sales',
-    createdAt: Date.now() - 3600000 * 8,
-  },
-  {
-    id: 'tx_sample_2',
-    type: 'purchase',
-    amount: 850,
-    date: getTodayString(0),
-    time: '09:15 AM',
-    category: 'Milk',
-    notes: 'Dairy supplier morning milk crates',
-    createdAt: Date.now() - 3600000 * 7,
-  },
-  {
-    id: 'tx_sample_3',
-    type: 'credit_sale',
-    amount: 320,
-    date: getTodayString(0),
-    time: '10:00 AM',
-    customerName: 'Ramesh Kumar',
-    phone: '9876543210',
-    notes: '2kg Sugar, 1L Oil (Udhar)',
-    createdAt: Date.now() - 3600000 * 6,
-  },
-  {
-    id: 'tx_sample_4',
-    type: 'credit_payment',
-    amount: 500,
-    date: getTodayString(0),
-    time: '11:45 AM',
-    customerName: 'Suresh Sharma',
-    phone: '9123456789',
-    paymentMethod: 'Cash',
-    notes: 'Old bill balance payment',
-    createdAt: Date.now() - 3600000 * 5,
-  },
-  {
-    id: 'tx_sample_5',
-    type: 'expense',
-    amount: 120,
-    date: getTodayString(0),
-    time: '01:10 PM',
-    category: 'Miscellaneous',
-    notes: 'Tea & Snacks for store staff',
-    createdAt: Date.now() - 3600000 * 4,
-  },
-  {
-    id: 'tx_sample_6',
-    type: 'withdrawal',
-    amount: 200,
-    date: getTodayString(0),
-    time: '03:00 PM',
-    takenBy: 'Mother',
-    reason: 'House Expense',
-    notes: 'Vegetables & domestic needs',
-    createdAt: Date.now() - 3600000 * 3,
-  },
-  {
-    id: 'tx_sample_7',
-    type: 'cash_sale',
-    amount: 2340,
-    date: getTodayString(0),
-    time: '05:40 PM',
-    notes: 'Afternoon store sales',
-    createdAt: Date.now() - 3600000 * 2,
-  },
-  // Yesterday sample entries
-  {
-    id: 'tx_sample_8',
-    type: 'cash_sale',
-    amount: 3800,
-    date: getTodayString(1),
-    time: '07:30 PM',
-    notes: 'Full day cash sales',
-    createdAt: Date.now() - 86400000,
-  },
-  {
-    id: 'tx_sample_9',
-    type: 'purchase',
-    amount: 1500,
-    date: getTodayString(1),
-    time: '11:00 AM',
-    category: 'Groceries',
-    notes: 'Wholesale rice and dal stock',
-    createdAt: Date.now() - 86400000 + 3600000,
-  },
-  {
-    id: 'tx_sample_10',
-    type: 'expense',
-    amount: 600,
-    date: getTodayString(1),
-    time: '04:00 PM',
-    category: 'Electricity',
-    notes: 'Shop electricity bill payment',
-    createdAt: Date.now() - 86400000 + 7200000,
-  },
-];
+export const SAMPLE_TRANSACTIONS: Transaction[] = [];
 
 export const loadSettings = (): StoreSettings => {
   try {
@@ -154,15 +51,15 @@ export const loadTransactions = (): Transaction[] => {
     const data = localStorage.getItem(TRANSACTIONS_KEY);
     if (data) {
       const parsed = JSON.parse(data);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
         return parsed;
       }
     }
   } catch (e) {
     console.error('Error loading transactions from storage', e);
   }
-  saveTransactions(SAMPLE_TRANSACTIONS);
-  return SAMPLE_TRANSACTIONS;
+  saveTransactions([]);
+  return [];
 };
 
 export const saveTransactions = (transactions: Transaction[]): void => {

@@ -106,7 +106,7 @@ export const CalculatorScreen: React.FC = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto p-4 pb-24 space-y-4">
+    <div className="max-w-md sm:max-w-lg md:max-w-xl mx-auto p-4 sm:p-6 pb-28 space-y-4 sm:space-y-5">
       {/* Title Banner */}
       <div className="flex items-center justify-between bg-emerald-600 dark:bg-emerald-700 text-white p-3.5 rounded-2xl shadow-md">
         <div className="flex items-center gap-2.5">

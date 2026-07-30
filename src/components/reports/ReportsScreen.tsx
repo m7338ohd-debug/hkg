@@ -30,7 +30,7 @@ export const ReportsScreen: React.FC = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto p-4 pb-24 space-y-4">
+    <div className="max-w-md sm:max-w-xl md:max-w-2xl mx-auto p-4 sm:p-6 pb-28 space-y-4 sm:space-y-5">
       {/* Report Tab Selector */}
       <div className="flex bg-slate-200 dark:bg-slate-800 p-1.5 rounded-2xl">
         {(['daily', 'weekly', 'monthly'] as const).map((tab) => (
