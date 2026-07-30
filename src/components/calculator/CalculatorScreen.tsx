@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Delete, RotateCcw, CheckCircle, Calculator as CalcIcon, Plus, Sparkles, Mic, MicOff } from 'lucide-react';
+import { Delete, RotateCcw, CheckCircle, Calculator as CalcIcon, Sparkles, Mic, MicOff } from 'lucide-react';
 import { useCashFlow } from '../../context/CashFlowContext';
 import { formatCurrency, getTodayDateString } from '../../utils/calculations';
 import { useSpeechToText } from '../../utils/useSpeech';

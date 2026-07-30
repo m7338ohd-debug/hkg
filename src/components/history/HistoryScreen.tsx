@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react';
 import {
   Search,
   Filter,
-  Calendar,
   Trash2,
   Edit2,
   CreditCard,
@@ -12,8 +11,6 @@ import {
   Wallet,
   Calculator,
   X,
-  CheckCircle2,
-  RotateCcw,
   Mic,
 } from 'lucide-react';
 import { useCashFlow } from '../../context/CashFlowContext';
