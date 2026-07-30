@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Wallet,
   TrendingUp,
@@ -11,6 +11,8 @@ import {
   Sparkles,
   CheckCircle2,
   X,
+  Users,
+  Search,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -24,7 +26,7 @@ import {
   CartesianGrid,
 } from 'recharts';
 import { useCashFlow } from '../../context/CashFlowContext';
-import { formatCurrency, calculatePeriodSummary, getChartData, getCustomerCreditSummaries, getTodayDateString } from '../../utils/calculations';
+import { formatCurrency, calculatePeriodSummary, getChartData, getCustomerCreditSummaries, getTodayDateString, formatDateDisplay } from '../../utils/calculations';
 import type { CustomerCreditSummary } from '../../types';
 import type { ActiveTab } from '../common/BottomNav';
 
@@ -38,6 +40,12 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab }
   const [chartTimeframe, setChartTimeframe] = useState<'7days' | '14days' | '30days'>('7days');
   const [selectedChart, setSelectedChart] = useState<'cashflow' | 'profit' | 'expenses'>('cashflow');
 
+  // Udhar Search filter inside Udhar report card
+  const [udharSearch, setUdharSearch] = useState<string>('');
+
+  // Ref to scroll to Udhar List
+  const udharSectionRef = useRef<HTMLDivElement>(null);
+
   // Quick Collect Udhar Modal State
   const [collectTarget, setCollectTarget] = useState<CustomerCreditSummary | null>(null);
   const [customCollectAmount, setCustomCollectAmount] = useState<string>('');
@@ -47,7 +55,15 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab }
   const today = periodSummary.today;
   const weekly = periodSummary.weekly;
   const monthly = periodSummary.monthly;
+
+  // Filter all active customer credit summaries
   const customerUdharList = getCustomerCreditSummaries(transactions).filter((c) => c.outstandingBalance > 0);
+  const filteredUdharList = customerUdharList.filter(
+    (c) =>
+      !udharSearch ||
+      c.customerName.toLowerCase().includes(udharSearch.toLowerCase()) ||
+      (c.phone && c.phone.includes(udharSearch))
+  );
 
   const daysCount = chartTimeframe === '7days' ? 7 : chartTimeframe === '14days' ? 14 : 30;
   const chartData = getChartData(transactions, daysCount);
@@ -58,13 +74,20 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab }
     setPayMethod('Cash');
   };
 
+  const scrollToUdharList = () => {
+    if (udharSectionRef.current) {
+      udharSectionRef.current.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      setActiveTab('transactions');
+    }
+  };
+
   const handleConfirmCollect = (e: React.FormEvent) => {
     e.preventDefault();
     if (!collectTarget) return;
 
     const numAmount = parseFloat(customCollectAmount);
     if (isNaN(numAmount) || numAmount <= 0) {
-      alert('Please enter a valid payment amount');
       return;
     }
 
@@ -107,12 +130,12 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab }
           </div>
           <div className="text-left">
             <h4 className="font-extrabold text-xs">Give Udhar</h4>
-            <p className="text-[10px] text-purple-100">Credit Sale</p>
+            <p className="text-[10px] text-purple-100">+ New Credit Sale</p>
           </div>
         </button>
 
         <button
-          onClick={() => setActiveTab('transactions')}
+          onClick={scrollToUdharList}
           className="p-3 bg-gradient-to-br from-blue-600 to-cyan-600 text-white rounded-2xl shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center gap-3 group active:scale-[0.98]"
         >
           <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-xs group-hover:scale-110 transition-transform">
@@ -120,7 +143,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab }
           </div>
           <div className="text-left">
             <h4 className="font-extrabold text-xs">Got Udhar</h4>
-            <p className="text-[10px] text-blue-100">Receive Credit</p>
+            <p className="text-[10px] text-blue-100">View All ({customerUdharList.length})</p>
           </div>
         </button>
 
@@ -169,44 +192,75 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab }
                 {formatCurrency(today.profit, settings.currency)}
               </div>
             </div>
-            <div className="text-right">
-              <span className="text-[10px] text-slate-400 uppercase font-bold">Outstanding Udhar</span>
-              <div className="text-base font-bold text-purple-400">
+            <button
+              onClick={scrollToUdharList}
+              className="text-right group cursor-pointer"
+            >
+              <span className="text-[10px] text-slate-400 uppercase font-bold block">Outstanding Udhar</span>
+              <div className="text-base font-bold text-purple-400 group-hover:underline">
                 {formatCurrency(today.outstandingCredit, settings.currency)}
               </div>
-            </div>
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Customer Udhar Summary & Quick Pay Section */}
-      {customerUdharList.length > 0 && (
-        <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 shadow-xl border border-purple-200 dark:border-purple-900/50 space-y-3">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-700">
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-xl bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400">
-                <CreditCard className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">Active Udhar Customers</h3>
-                <p className="text-[10px] text-slate-400">Tap "Receive Payment" in row to collect & remove</p>
-              </div>
+      {/* Customer Udhar Summary & Full List Report */}
+      <div ref={udharSectionRef} className="bg-white dark:bg-slate-800 rounded-3xl p-5 shadow-xl border border-purple-200 dark:border-purple-900/50 space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-slate-700">
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-xl bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400">
+              <Users className="w-5 h-5" />
             </div>
-            <span className="text-xs font-black text-purple-600 dark:text-purple-400">
-              Total Udhar: {formatCurrency(today.outstandingCredit, settings.currency)}
-            </span>
+            <div>
+              <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                Active Customer Udhar Report ({customerUdharList.length})
+              </h3>
+              <p className="text-[10px] text-slate-400">Full list of customers owing money with instant Receive button</p>
+            </div>
           </div>
 
-          {/* List of Udhar Customers with row Receive button */}
-          <div className="divide-y divide-slate-100 dark:divide-slate-700/60 max-h-64 overflow-y-auto pr-1">
-            {customerUdharList.map((cust, i) => (
+          <div className="flex items-center gap-2">
+            {/* Search Input for Udhar List */}
+            {customerUdharList.length > 3 && (
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  value={udharSearch}
+                  onChange={(e) => setUdharSearch(e.target.value)}
+                  placeholder="Filter customer..."
+                  className="pl-7 pr-3 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium w-36"
+                />
+              </div>
+            )}
+
+            <span className="text-xs font-black text-purple-600 dark:text-purple-400 shrink-0">
+              Total: {formatCurrency(today.outstandingCredit, settings.currency)}
+            </span>
+          </div>
+        </div>
+
+        {/* List of All Active Udhar Customers with row Receive button */}
+        {filteredUdharList.length === 0 ? (
+          <div className="py-6 text-center text-slate-400 text-xs font-medium space-y-1">
+            <CheckCircle2 className="w-6 h-6 mx-auto text-emerald-500" />
+            <p className="font-bold text-slate-700 dark:text-slate-300">No Outstanding Udhar!</p>
+            <p className="text-[11px]">All customer credit balances have been cleared.</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-100 dark:divide-slate-700/60 max-h-72 overflow-y-auto pr-1">
+            {filteredUdharList.map((cust, i) => (
               <div key={i} className="py-3 flex items-center justify-between gap-3 text-xs">
                 <div>
                   <h4 className="font-bold text-sm text-slate-900 dark:text-white">{cust.customerName}</h4>
-                  {cust.phone && <p className="text-[11px] text-slate-400">{cust.phone}</p>}
+                  <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
+                    {cust.phone && <span>Ph: {cust.phone}</span>}
+                    <span>• Last entry: {formatDateDisplay(cust.lastTransactionDate)}</span>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 shrink-0">
                   <div className="text-right">
                     <span className="font-black text-purple-600 dark:text-purple-400 block text-sm font-mono">
                       {formatCurrency(cust.outstandingBalance, settings.currency)}
@@ -217,7 +271,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab }
                   {/* Inline Quick Action Button */}
                   <button
                     onClick={() => handleOpenCollectModal(cust)}
-                    className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-md active:scale-95 transition-all flex items-center gap-1 cursor-pointer shrink-0"
+                    className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-md active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
                   >
                     <HandCoins className="w-3.5 h-3.5" />
                     Receive
@@ -226,8 +280,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab }
               </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Summary Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -508,7 +562,6 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab }
                 <input
                   type="number"
                   step="any"
-                  required
                   value={customCollectAmount}
                   onChange={(e) => setCustomCollectAmount(e.target.value)}
                   className="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-lg font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
