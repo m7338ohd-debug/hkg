@@ -1,30 +1,25 @@
 @import "tailwindcss";
 
-@layer base {
-  :root {
-    --bg-primary: #f8fafc;
-    --bg-card: #ffffff;
-    --text-main: #0f172a;
-    --border-color: #e2e8f0;
-  }
+@custom-variant dark (&:where(.dark, .dark *));
 
-  .dark {
-    --bg-primary: #0b0f19;
-    --bg-card: #151c2c;
-    --text-main: #f8fafc;
-    --border-color: #1e293b;
-  }
-
-  body {
-    background-color: var(--bg-primary);
-    color: var(--text-main);
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    -webkit-tap-highlight-color: transparent;
-    user-select: none;
-  }
+html {
+  background-color: #f8fafc;
+  color: #0f172a;
 }
 
-/* Custom scrollbars for clean UI */
+html.dark {
+  background-color: #0b0f19;
+  color: #f8fafc;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  min-height: 100vh;
+}
+
+/* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -40,19 +35,7 @@
   background: rgba(156, 163, 175, 0.6);
 }
 
-/* Glassmorphism helpers */
-.glass-card {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-.dark .glass-card {
-  background: rgba(21, 28, 44, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-
-/* Print Styles for clean PDF export */
+/* Print Styles for PDF Export */
 @media print {
   body {
     background: #ffffff !important;

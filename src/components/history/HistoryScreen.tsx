@@ -14,10 +14,12 @@ import {
   X,
   CheckCircle2,
   RotateCcw,
+  Mic,
 } from 'lucide-react';
 import { useCashFlow } from '../../context/CashFlowContext';
 import type { Transaction, TransactionType } from '../../types';
 import { formatCurrency, formatDateDisplay, filterTransactionsByDate } from '../../utils/calculations';
+import { useSpeechToText } from '../../utils/useSpeech';
 
 export const HistoryScreen: React.FC = () => {
   const { transactions, settings, deleteTransaction, editTransaction } = useCashFlow();
@@ -28,6 +30,11 @@ export const HistoryScreen: React.FC = () => {
   const [customStart, setCustomStart] = useState<string>('');
   const [customEnd, setCustomEnd] = useState<string>('');
   const [selectedType, setSelectedType] = useState<string>('all');
+
+  // Voice Search Helper
+  const { isListening, startListening } = useSpeechToText((spokenText) => {
+    setSearchQuery(spokenText);
+  });
 
   // Edit Modal State
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
@@ -93,24 +100,39 @@ export const HistoryScreen: React.FC = () => {
 
   return (
     <div className="max-w-md sm:max-w-xl md:max-w-2xl lg:max-w-3xl mx-auto p-4 sm:p-6 pb-28 space-y-4 sm:space-y-5">
-      {/* Search Header Bar */}
-      <div className="relative">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search customer, amount, notes, category..."
-          className="w-full pl-10 pr-9 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs sm:text-sm font-medium text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500 shadow-xs"
-        />
-        {searchQuery && (
-          <button
-            onClick={() => setSearchQuery('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        )}
+      {/* Search Header Bar with Voice Mic */}
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search customer, amount, notes, category..."
+            className="w-full pl-10 pr-9 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs sm:text-sm font-medium text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500 shadow-xs"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={startListening}
+          className={`p-2.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-center ${
+            isListening
+              ? 'bg-rose-500 text-white animate-pulse border-rose-500 shadow-lg'
+              : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+          }`}
+          title="Voice Search Mic"
+        >
+          <Mic className="w-5 h-5 text-emerald-500" />
+        </button>
       </div>
 
       {/* Date Filter Chips */}
@@ -277,7 +299,7 @@ export const HistoryScreen: React.FC = () => {
               <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">Edit Transaction</h3>
               <button
                 onClick={() => setEditingTx(null)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -289,7 +311,6 @@ export const HistoryScreen: React.FC = () => {
                 <input
                   type="number"
                   step="any"
-                  required
                   value={editingTx.amount}
                   onChange={(e) => setEditingTx({ ...editingTx, amount: parseFloat(e.target.value) || 0 })}
                   className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm"
@@ -343,13 +364,13 @@ export const HistoryScreen: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setEditingTx(null)}
-                  className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100"
+                  className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-500 shadow-md"
+                  className="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-500 shadow-md cursor-pointer"
                 >
                   Save Changes
                 </button>

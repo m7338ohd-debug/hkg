@@ -13,10 +13,12 @@ import {
   FileText,
   User,
   ArrowRight,
+  Mic,
 } from 'lucide-react';
 import { useCashFlow } from '../../context/CashFlowContext';
 import type { TransactionType, PurchaseCategory, ExpenseCategory, WithdrawalPerson, WithdrawalReason, PaymentMethod } from '../../types';
 import { getTodayDateString, getCustomerCreditSummaries, formatCurrency } from '../../utils/calculations';
+import { useSpeechToText } from '../../utils/useSpeech';
 
 interface TransactionFormScreenProps {
   initialType?: TransactionType;
@@ -40,6 +42,15 @@ export const TransactionFormScreen: React.FC<TransactionFormScreenProps> = ({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Cash');
   const [notes, setNotes] = useState<string>('');
   const [date, setDate] = useState<string>(getTodayDateString());
+
+  // Voice Recognition for Customer / Notes
+  const { isListening, startListening } = useSpeechToText((spokenText) => {
+    if (!customerName && (type === 'credit_sale' || type === 'credit_payment')) {
+      setCustomerName(spokenText);
+    } else {
+      setNotes((prev) => (prev ? `${prev} ${spokenText}` : spokenText));
+    }
+  });
 
   const customerSummaries = getCustomerCreditSummaries(transactions).filter((c) => c.outstandingBalance > 0);
 
@@ -65,12 +76,6 @@ export const TransactionFormScreen: React.FC<TransactionFormScreenProps> = ({
     e.preventDefault();
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount <= 0) {
-      alert('Please enter a valid amount greater than 0');
-      return;
-    }
-
-    if ((type === 'credit_sale' || type === 'credit_payment') && !customerName.trim()) {
-      alert('Please enter a customer name for credit/udhar transactions');
       return;
     }
 
@@ -141,15 +146,24 @@ export const TransactionFormScreen: React.FC<TransactionFormScreenProps> = ({
             {type === 'withdrawal' && <Wallet className="w-5 h-5 text-amber-500" />}
             {typeTabs.find((t) => t.id === type)?.label}
           </h3>
-          <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
-            Offline Saved
-          </span>
+
+          <button
+            type="button"
+            onClick={startListening}
+            className={`p-2 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer transition-all ${
+              isListening ? 'bg-rose-500 text-white animate-pulse' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+            }`}
+            title="Voice Speech Input"
+          >
+            <Mic className="w-4 h-4" />
+            <span>{isListening ? 'Listening...' : 'Voice Mic'}</span>
+          </button>
         </div>
 
         {/* Amount Field */}
         <div>
           <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-            Amount ({settings.currency}) *
+            Amount ({settings.currency})
           </label>
           <div className="relative">
             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-slate-400 text-lg">
@@ -158,7 +172,6 @@ export const TransactionFormScreen: React.FC<TransactionFormScreenProps> = ({
             <input
               type="number"
               step="any"
-              required
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0.00"
@@ -172,18 +185,24 @@ export const TransactionFormScreen: React.FC<TransactionFormScreenProps> = ({
           <>
             <div className="relative">
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Customer Name *
+                Customer Name
               </label>
-              <div className="relative">
+              <div className="relative flex items-center">
                 <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                   type="text"
-                  required
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
                   placeholder="e.g. Ramesh Kumar"
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-medium text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
+                  className="w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-medium text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
                 />
+                <button
+                  type="button"
+                  onClick={startListening}
+                  className="absolute right-2.5 p-1 text-slate-400 hover:text-emerald-500"
+                >
+                  <Mic className="w-4 h-4" />
+                </button>
               </div>
 
               {/* Autocomplete Customer Suggestions */}
@@ -358,7 +377,6 @@ export const TransactionFormScreen: React.FC<TransactionFormScreenProps> = ({
             <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="date"
-              required
               value={date}
               onChange={(e) => setDate(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-medium text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
