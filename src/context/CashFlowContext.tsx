@@ -11,6 +11,8 @@ import {
   pushToCloudSync,
   pullFromCloudSync,
   subscribeLocalSync,
+  subscribeCloudSSE,
+  mergeTransactions,
 } from '../db/cloudSync';
 
 interface ToastMessage {
@@ -57,16 +59,49 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [settings.darkMode]);
 
-  // Subscribe to instant local multi-tab / device channel sync
+  // 1. Subscribe to instant local multi-tab / same-device channel sync
   useEffect(() => {
     const unsubscribe = subscribeLocalSync((remoteData) => {
-      if (remoteData.transactions) setTransactionsState(remoteData.transactions);
-      if (remoteData.settings) setSettingsState(remoteData.settings);
+      if (remoteData.transactions) {
+        setTransactionsState((prev) => {
+          const merged = mergeTransactions(prev, remoteData.transactions);
+          saveTransactions(merged);
+          return merged;
+        });
+      }
+      if (remoteData.settings) {
+        setSettingsState(remoteData.settings);
+        saveSettings(remoteData.settings);
+      }
     });
     return unsubscribe;
   }, []);
 
-  // Periodic Cloud Sync Polling every 3 seconds for 4 users on Vercel
+  // 2. Subscribe to Live Firebase SSE EventSource stream (Instant Push when ANY device enters data)
+  useEffect(() => {
+    const syncCode = settings.storeSyncCode || 'AYESHA-STORE-01';
+
+    const unsubscribeSSE = subscribeCloudSSE(syncCode, (cloudData) => {
+      if (cloudData.transactions) {
+        setTransactionsState((prev) => {
+          const merged = mergeTransactions(prev, cloudData.transactions);
+          saveTransactions(merged);
+          return merged;
+        });
+      }
+      if (cloudData.settings) {
+        setSettingsState((prev) => {
+          const mergedS = { ...prev, ...cloudData.settings };
+          saveSettings(mergedS);
+          return mergedS;
+        });
+      }
+    });
+
+    return unsubscribeSSE;
+  }, [settings.storeSyncCode]);
+
+  // 3. Fallback polling every 2 seconds for guaranteed redundancy
   useEffect(() => {
     let isMounted = true;
     const syncCode = settings.storeSyncCode || 'AYESHA-STORE-01';
@@ -76,9 +111,15 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       try {
         const cloudData = await pullFromCloudSync(syncCode);
         if (cloudData && isMounted) {
-          if (cloudData.transactions && JSON.stringify(cloudData.transactions) !== JSON.stringify(transactions)) {
-            setTransactionsState(cloudData.transactions);
-            saveTransactions(cloudData.transactions);
+          if (cloudData.transactions) {
+            setTransactionsState((prev) => {
+              const merged = mergeTransactions(prev, cloudData.transactions);
+              if (JSON.stringify(merged) !== JSON.stringify(prev)) {
+                saveTransactions(merged);
+                return merged;
+              }
+              return prev;
+            });
           }
           if (cloudData.settings && JSON.stringify(cloudData.settings) !== JSON.stringify(settings)) {
             setSettingsState(cloudData.settings);
@@ -86,26 +127,29 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           }
         }
       } catch (err) {
-        // Silently handle offline/network blips
+        // Silently handle network blips
       }
-    }, 3500);
+    }, 2000);
 
     return () => {
       isMounted = false;
       clearInterval(syncInterval);
     };
-  }, [settings.storeSyncCode, transactions, settings]);
+  }, [settings.storeSyncCode, settings]);
 
   const syncNow = async () => {
     setIsSyncing(true);
     const syncCode = settings.storeSyncCode || 'AYESHA-STORE-01';
     await pushToCloudSync(syncCode, settings, transactions);
     const remote = await pullFromCloudSync(syncCode);
-    if (remote) {
-      setTransactionsState(remote.transactions);
-      saveTransactions(remote.transactions);
-      setSettingsState(remote.settings);
-      saveSettings(remote.settings);
+    if (remote && remote.transactions) {
+      const merged = mergeTransactions(transactions, remote.transactions);
+      setTransactionsState(merged);
+      saveTransactions(merged);
+      if (remote.settings) {
+        setSettingsState(remote.settings);
+        saveSettings(remote.settings);
+      }
     }
     setTimeout(() => setIsSyncing(false), 500);
   };
