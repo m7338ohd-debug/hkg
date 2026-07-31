@@ -8,6 +8,9 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   ownerName: 'Ayesha',
   currency: '₹',
   openingCash: 5000,
+  investedAmount: 25000,
+  profitRate: 2,
+  storeSyncCode: 'AYESHA-STORE-01',
   darkMode: true,
   autoBackupReminder: true,
 };

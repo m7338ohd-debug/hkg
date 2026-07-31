@@ -7,6 +7,11 @@ import {
   saveTransactions,
   importDataJSON,
 } from '../db/storage';
+import {
+  pushToCloudSync,
+  pullFromCloudSync,
+  subscribeLocalSync,
+} from '../db/cloudSync';
 
 interface ToastMessage {
   id: string;
@@ -20,6 +25,7 @@ interface CashFlowContextType {
   transactions: Transaction[];
   settings: StoreSettings;
   toast: ToastMessage | null;
+  isSyncing: boolean;
   showToast: (title: string, message?: string, type?: 'success' | 'error' | 'info', undoable?: boolean) => void;
   hideToast: () => void;
   addTransaction: (tx: Omit<Transaction, 'id' | 'createdAt'>) => Transaction;
@@ -30,6 +36,7 @@ interface CashFlowContextType {
   resetPeriodData: (period: 'weekly' | 'monthly' | 'all') => void;
   importBackup: (jsonStr: string) => { success: boolean; message: string };
   toggleDarkMode: () => void;
+  syncNow: () => Promise<void>;
 }
 
 const CashFlowContext = createContext<CashFlowContextType | undefined>(undefined);
@@ -39,6 +46,7 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [transactions, setTransactionsState] = useState<Transaction[]>(loadTransactions);
   const [lastDeletedTx, setLastDeletedTx] = useState<Transaction | null>(null);
   const [toast, setToast] = useState<ToastMessage | null>(null);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
 
   // Sync html dark mode class
   useEffect(() => {
@@ -48,6 +56,59 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       document.documentElement.classList.remove('dark');
     }
   }, [settings.darkMode]);
+
+  // Subscribe to instant local multi-tab / device channel sync
+  useEffect(() => {
+    const unsubscribe = subscribeLocalSync((remoteData) => {
+      if (remoteData.transactions) setTransactionsState(remoteData.transactions);
+      if (remoteData.settings) setSettingsState(remoteData.settings);
+    });
+    return unsubscribe;
+  }, []);
+
+  // Periodic Cloud Sync Polling every 3 seconds for 4 users on Vercel
+  useEffect(() => {
+    let isMounted = true;
+    const syncCode = settings.storeSyncCode || 'AYESHA-STORE-01';
+
+    const syncInterval = setInterval(async () => {
+      if (!navigator.onLine) return;
+      try {
+        const cloudData = await pullFromCloudSync(syncCode);
+        if (cloudData && isMounted) {
+          if (cloudData.transactions && JSON.stringify(cloudData.transactions) !== JSON.stringify(transactions)) {
+            setTransactionsState(cloudData.transactions);
+            saveTransactions(cloudData.transactions);
+          }
+          if (cloudData.settings && JSON.stringify(cloudData.settings) !== JSON.stringify(settings)) {
+            setSettingsState(cloudData.settings);
+            saveSettings(cloudData.settings);
+          }
+        }
+      } catch (err) {
+        // Silently handle offline/network blips
+      }
+    }, 3500);
+
+    return () => {
+      isMounted = false;
+      clearInterval(syncInterval);
+    };
+  }, [settings.storeSyncCode, transactions, settings]);
+
+  const syncNow = async () => {
+    setIsSyncing(true);
+    const syncCode = settings.storeSyncCode || 'AYESHA-STORE-01';
+    await pushToCloudSync(syncCode, settings, transactions);
+    const remote = await pullFromCloudSync(syncCode);
+    if (remote) {
+      setTransactionsState(remote.transactions);
+      saveTransactions(remote.transactions);
+      setSettingsState(remote.settings);
+      saveSettings(remote.settings);
+    }
+    setTimeout(() => setIsSyncing(false), 500);
+  };
 
   const showToast = (
     title: string,
@@ -81,10 +142,12 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = [newTx, ...transactions];
     setTransactionsState(updated);
     saveTransactions(updated);
+    pushToCloudSync(settings.storeSyncCode || 'AYESHA-STORE-01', settings, updated);
 
     const typeLabels: Record<TransactionType, string> = {
       cash_sale: 'Cash Sale Recorded',
       credit_sale: 'Udhar Given Recorded',
+      home_use: 'Home Use Sale Recorded',
       credit_payment: 'Credit Collected Recorded',
       purchase: 'Purchase Recorded',
       expense: 'Expense Recorded',
@@ -93,7 +156,7 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     showToast(
       typeLabels[txData.type] || 'Transaction Saved',
-      `${settings.currency}${txData.amount} added to live cash book`
+      `${settings.currency}${txData.amount} added to store ledger`
     );
 
     return newTx;
@@ -103,7 +166,8 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = transactions.map((t) => (t.id === id ? { ...t, ...updatedFields } : t));
     setTransactionsState(updated);
     saveTransactions(updated);
-    showToast('Transaction Updated', 'Changes applied instantly');
+    pushToCloudSync(settings.storeSyncCode || 'AYESHA-STORE-01', settings, updated);
+    showToast('Transaction Updated', 'Changes applied instantly across devices');
   };
 
   const deleteTransaction = (id: string) => {
@@ -114,6 +178,7 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = transactions.filter((t) => t.id !== id);
     setTransactionsState(updated);
     saveTransactions(updated);
+    pushToCloudSync(settings.storeSyncCode || 'AYESHA-STORE-01', settings, updated);
 
     showToast('Transaction Deleted', `Removed ${settings.currency}${target.amount}`, 'info', true);
   };
@@ -123,6 +188,7 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = [lastDeletedTx, ...transactions];
     setTransactionsState(updated);
     saveTransactions(updated);
+    pushToCloudSync(settings.storeSyncCode || 'AYESHA-STORE-01', settings, updated);
     showToast('Restored Transaction', `Brought back ${settings.currency}${lastDeletedTx.amount}`);
     setLastDeletedTx(null);
   };
@@ -131,6 +197,7 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const merged = { ...settings, ...newSettings };
     setSettingsState(merged);
     saveSettings(merged);
+    pushToCloudSync(merged.storeSyncCode || 'AYESHA-STORE-01', merged, transactions);
     showToast('Settings Saved', 'Store configuration updated');
   };
 
@@ -139,44 +206,44 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const resetPeriodData = (period: 'weekly' | 'monthly' | 'all') => {
-    if (period === 'all') {
-      setTransactionsState([]);
-      saveTransactions([]);
-      showToast('All Data Reset', 'Cleared transaction history');
-      return;
-    }
-
-    const todayObj = new Date();
     let filtered = [...transactions];
+    if (period === 'all') {
+      filtered = [];
+    } else {
+      const todayObj = new Date();
+      if (period === 'weekly') {
+        const firstDay = new Date(todayObj);
+        const day = todayObj.getDay();
+        const diff = todayObj.getDate() - day + (day === 0 ? -6 : 1);
+        firstDay.setDate(diff);
+        firstDay.setHours(0, 0, 0, 0);
 
-    if (period === 'weekly') {
-      const firstDay = new Date(todayObj);
-      const day = todayObj.getDay();
-      const diff = todayObj.getDate() - day + (day === 0 ? -6 : 1);
-      firstDay.setDate(diff);
-      firstDay.setHours(0, 0, 0, 0);
+        filtered = transactions.filter((t) => new Date(t.date) < firstDay);
+      } else if (period === 'monthly') {
+        const currentMonth = todayObj.getMonth();
+        const currentYear = todayObj.getFullYear();
 
-      filtered = transactions.filter((t) => new Date(t.date) < firstDay);
-    } else if (period === 'monthly') {
-      const currentMonth = todayObj.getMonth();
-      const currentYear = todayObj.getFullYear();
-
-      filtered = transactions.filter((t) => {
-        const d = new Date(t.date);
-        return !(d.getMonth() === currentMonth && d.getFullYear() === currentYear);
-      });
+        filtered = transactions.filter((t) => {
+          const d = new Date(t.date);
+          return !(d.getMonth() === currentMonth && d.getFullYear() === currentYear);
+        });
+      }
     }
 
     setTransactionsState(filtered);
     saveTransactions(filtered);
+    pushToCloudSync(settings.storeSyncCode || 'AYESHA-STORE-01', settings, filtered);
     showToast(`Reset ${period === 'weekly' ? 'Weekly' : 'Monthly'} Data`, 'Target entries cleared');
   };
 
   const importBackup = (jsonStr: string) => {
     const res = importDataJSON(jsonStr);
     if (res.success) {
-      setSettingsState(loadSettings());
-      setTransactionsState(loadTransactions());
+      const loadedS = loadSettings();
+      const loadedT = loadTransactions();
+      setSettingsState(loadedS);
+      setTransactionsState(loadedT);
+      pushToCloudSync(loadedS.storeSyncCode || 'AYESHA-STORE-01', loadedS, loadedT);
       showToast('Restore Complete', res.message);
     } else {
       showToast('Restore Failed', res.message, 'error');
@@ -190,6 +257,7 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         transactions,
         settings,
         toast,
+        isSyncing,
         showToast,
         hideToast,
         addTransaction,
@@ -200,6 +268,7 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         resetPeriodData,
         importBackup,
         toggleDarkMode,
+        syncNow,
       }}
     >
       {children}
@@ -214,3 +283,4 @@ export const useCashFlow = () => {
   }
   return context;
 };
+

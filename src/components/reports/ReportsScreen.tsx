@@ -76,6 +76,10 @@ export const ReportsScreen: React.FC = () => {
           <div className="space-y-3">
             <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-2xl space-y-2">
               <div className="flex justify-between text-xs py-1 border-b border-slate-200/60 dark:border-slate-700/60">
+                <span className="text-slate-600 dark:text-slate-400">Invested Capital Amount</span>
+                <span className="font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(settings.investedAmount || 25000, settings.currency)}</span>
+              </div>
+              <div className="flex justify-between text-xs py-1 border-b border-slate-200/60 dark:border-slate-700/60">
                 <span className="text-slate-600 dark:text-slate-400">Opening Cash</span>
                 <span className="font-bold">{formatCurrency(today.openingCash, settings.currency)}</span>
               </div>
@@ -86,9 +90,21 @@ export const ReportsScreen: React.FC = () => {
                 </span>
               </div>
               <div className="flex justify-between text-xs py-1 border-b border-slate-200/60 dark:border-slate-700/60">
-                <span className="text-slate-600 dark:text-slate-400">Credit Sales (Udhar)</span>
+                <span className="text-slate-600 dark:text-slate-400">Credit Sales (Udhar) (+)</span>
                 <span className="font-bold text-purple-600 dark:text-purple-400">
                   {formatCurrency(today.creditSales, settings.currency)}
+                </span>
+              </div>
+              <div className="flex justify-between text-xs py-1 border-b border-slate-200/60 dark:border-slate-700/60">
+                <span className="text-slate-600 dark:text-slate-400">Home Use Goods (+)</span>
+                <span className="font-bold text-amber-600 dark:text-amber-400">
+                  {formatCurrency(today.homeUseSales, settings.currency)}
+                </span>
+              </div>
+              <div className="flex justify-between text-xs py-1 font-bold border-b border-slate-200/60 dark:border-slate-700/60 bg-blue-50 dark:bg-blue-950/40 p-1.5 rounded-lg">
+                <span className="text-blue-700 dark:text-blue-300">TOTAL STORE SALES</span>
+                <span className="text-blue-700 dark:text-blue-300">
+                  {formatCurrency(today.totalSales, settings.currency)}
                 </span>
               </div>
               <div className="flex justify-between text-xs py-1 border-b border-slate-200/60 dark:border-slate-700/60">
@@ -98,13 +114,13 @@ export const ReportsScreen: React.FC = () => {
                 </span>
               </div>
               <div className="flex justify-between text-xs py-1 border-b border-slate-200/60 dark:border-slate-700/60">
-                <span className="text-slate-600 dark:text-slate-400">Purchases (-)</span>
+                <span className="text-slate-600 dark:text-slate-400">Groceries/Store Purchases (-)</span>
                 <span className="font-bold text-rose-600 dark:text-rose-400">
                   {formatCurrency(today.purchases, settings.currency)}
                 </span>
               </div>
               <div className="flex justify-between text-xs py-1 border-b border-slate-200/60 dark:border-slate-700/60">
-                <span className="text-slate-600 dark:text-slate-400">Expenses (-)</span>
+                <span className="text-slate-600 dark:text-slate-400">Store Expenses (-)</span>
                 <span className="font-bold text-rose-600 dark:text-rose-400">
                   {formatCurrency(today.expenses, settings.currency)}
                 </span>
@@ -119,12 +135,12 @@ export const ReportsScreen: React.FC = () => {
 
             <div className="bg-emerald-600 text-white p-4 rounded-2xl space-y-1">
               <div className="flex justify-between items-center text-xs">
-                <span className="text-emerald-100 uppercase font-bold">Current Cash In Hand</span>
-                <span className="text-lg font-black">{formatCurrency(today.cashInHand, settings.currency)}</span>
+                <span className="text-emerald-100 uppercase font-bold">2% Daily Net Investor Profit</span>
+                <span className="text-lg font-black">{formatCurrency(today.profit, settings.currency)}</span>
               </div>
               <div className="flex justify-between items-center text-xs pt-1 border-t border-emerald-500">
-                <span className="text-emerald-100 font-semibold">Today Net Profit</span>
-                <span className="font-bold">{formatCurrency(today.profit, settings.currency)}</span>
+                <span className="text-emerald-100 font-semibold">Live Working Cash In Hand</span>
+                <span className="font-bold">{formatCurrency(today.cashInHand, settings.currency)}</span>
               </div>
               <div className="flex justify-between items-center text-xs pt-1">
                 <span className="text-emerald-100 font-semibold">Outstanding Udhar</span>

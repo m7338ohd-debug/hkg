@@ -75,14 +75,34 @@ export const filterTransactionsByDate = (
 
 export const calculateSummary = (
   transactions: Transaction[],
-  openingCash: number,
+  settingsOrOpeningCash: StoreSettings | number,
   targetDate?: string
 ): DailySummary => {
+  const settings: StoreSettings =
+    typeof settingsOrOpeningCash === 'number'
+      ? {
+          storeName: 'Ayesha Provision Store',
+          ownerName: 'Ayesha',
+          currency: '₹',
+          openingCash: settingsOrOpeningCash,
+          investedAmount: 25000,
+          profitRate: 2,
+          storeSyncCode: 'AYESHA-STORE-01',
+          darkMode: true,
+          autoBackupReminder: true,
+        }
+      : settingsOrOpeningCash;
+
+  const openingCash = settings.openingCash;
+  const investedAmount = settings.investedAmount || 25000;
+  const profitRate = settings.profitRate || 2;
+
   const dateToUse = targetDate || getTodayDateString();
   const filtered = targetDate ? transactions.filter((t) => t.date === targetDate) : transactions;
 
   let cashSales = 0;
   let creditSales = 0;
+  let homeUseSales = 0;
   let creditReceived = 0;
   let purchases = 0;
   let expenses = 0;
@@ -95,6 +115,9 @@ export const calculateSummary = (
         break;
       case 'credit_sale':
         creditSales += t.amount;
+        break;
+      case 'home_use':
+        homeUseSales += t.amount;
         break;
       case 'credit_payment':
         creditReceived += t.amount;
@@ -119,30 +142,42 @@ export const calculateSummary = (
   });
   const outstandingCredit = Math.max(0, totalCreditGivenAllTime - totalCreditCollectedAllTime);
 
+  // Total Sales includes Cash Sales, Udhar Given, and Home Use entries
+  const totalSales = cashSales + creditSales + homeUseSales;
+  
+  // Daily Profit calculation is 2% of Total Sales
+  const profit = totalSales * (profitRate / 100);
+  const investorProfit = profit;
+
   const cashInHand = openingCash + cashSales + creditReceived - purchases - expenses - withdrawals;
-  const profit = cashSales + creditSales - purchases - expenses;
 
   return {
     date: dateToUse,
     openingCash,
+    investedAmount,
     cashSales,
     creditSales,
+    homeUseSales,
+    totalSales,
     creditReceived,
     purchases,
     expenses,
     withdrawals,
     cashInHand,
     profit,
+    investorProfit,
     outstandingCredit,
   };
 };
 
 export const calculatePeriodSummary = (transactions: Transaction[], settings: StoreSettings) => {
-  const todaySummary = calculateSummary(transactions, settings.openingCash, getTodayDateString());
+  const todaySummary = calculateSummary(transactions, settings, getTodayDateString());
+  const profitRate = settings.profitRate || 2;
 
   const weeklyTxs = filterTransactionsByDate(transactions, 'this_week');
   let weeklyCashSales = 0;
   let weeklyCreditSales = 0;
+  let weeklyHomeUseSales = 0;
   let weeklyCreditCollected = 0;
   let weeklyPurchases = 0;
   let weeklyExpenses = 0;
@@ -151,17 +186,20 @@ export const calculatePeriodSummary = (transactions: Transaction[], settings: St
   weeklyTxs.forEach((t) => {
     if (t.type === 'cash_sale') weeklyCashSales += t.amount;
     if (t.type === 'credit_sale') weeklyCreditSales += t.amount;
+    if (t.type === 'home_use') weeklyHomeUseSales += t.amount;
     if (t.type === 'credit_payment') weeklyCreditCollected += t.amount;
     if (t.type === 'purchase') weeklyPurchases += t.amount;
     if (t.type === 'expense') weeklyExpenses += t.amount;
     if (t.type === 'withdrawal') weeklyWithdrawals += t.amount;
   });
 
-  const weeklyProfit = weeklyCashSales + weeklyCreditSales - weeklyPurchases - weeklyExpenses;
+  const weeklyTotalSales = weeklyCashSales + weeklyCreditSales + weeklyHomeUseSales;
+  const weeklyProfit = weeklyTotalSales * (profitRate / 100);
 
   const monthlyTxs = filterTransactionsByDate(transactions, 'this_month');
   let monthlyCashSales = 0;
   let monthlyCreditSales = 0;
+  let monthlyHomeUseSales = 0;
   let monthlyCreditCollected = 0;
   let monthlyPurchases = 0;
   let monthlyExpenses = 0;
@@ -170,19 +208,23 @@ export const calculatePeriodSummary = (transactions: Transaction[], settings: St
   monthlyTxs.forEach((t) => {
     if (t.type === 'cash_sale') monthlyCashSales += t.amount;
     if (t.type === 'credit_sale') monthlyCreditSales += t.amount;
+    if (t.type === 'home_use') monthlyHomeUseSales += t.amount;
     if (t.type === 'credit_payment') monthlyCreditCollected += t.amount;
     if (t.type === 'purchase') monthlyPurchases += t.amount;
     if (t.type === 'expense') monthlyExpenses += t.amount;
     if (t.type === 'withdrawal') monthlyWithdrawals += t.amount;
   });
 
-  const monthlyProfit = monthlyCashSales + monthlyCreditSales - monthlyPurchases - monthlyExpenses;
+  const monthlyTotalSales = monthlyCashSales + monthlyCreditSales + monthlyHomeUseSales;
+  const monthlyProfit = monthlyTotalSales * (profitRate / 100);
 
   return {
     today: todaySummary,
     weekly: {
       cashSales: weeklyCashSales,
       creditSales: weeklyCreditSales,
+      homeUseSales: weeklyHomeUseSales,
+      totalSales: weeklyTotalSales,
       creditCollected: weeklyCreditCollected,
       purchases: weeklyPurchases,
       expenses: weeklyExpenses,
@@ -192,12 +234,14 @@ export const calculatePeriodSummary = (transactions: Transaction[], settings: St
     monthly: {
       cashSales: monthlyCashSales,
       creditSales: monthlyCreditSales,
+      homeUseSales: monthlyHomeUseSales,
+      totalSales: monthlyTotalSales,
       creditCollected: monthlyCreditCollected,
       purchases: monthlyPurchases,
       expenses: monthlyExpenses,
       withdrawals: monthlyWithdrawals,
       profit: monthlyProfit,
-      revenue: monthlyCashSales + monthlyCreditSales,
+      revenue: monthlyTotalSales,
     },
   };
 };

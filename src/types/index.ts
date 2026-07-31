@@ -4,7 +4,8 @@ export type TransactionType =
   | 'credit_payment' 
   | 'purchase' 
   | 'expense' 
-  | 'withdrawal';
+  | 'withdrawal'
+  | 'home_use';
 
 export type PurchaseCategory = 'Milk' | 'Groceries' | 'Snacks' | 'Beverages' | 'Other';
 
@@ -37,6 +38,9 @@ export interface StoreSettings {
   ownerName: string;
   currency: string;
   openingCash: number;
+  investedAmount: number; // Default 25000
+  profitRate: number; // Default 2 (%)
+  storeSyncCode: string; // Default 'AYESHA-STORE-01' for 4-user mobile sync
   darkMode: boolean;
   autoBackupReminder: boolean;
   lastBackupDate?: string;
@@ -54,14 +58,18 @@ export interface CustomerCreditSummary {
 export interface DailySummary {
   date: string;
   openingCash: number;
+  investedAmount: number;
   cashSales: number;
   creditSales: number;
+  homeUseSales: number;
+  totalSales: number;
   creditReceived: number;
   purchases: number;
   expenses: number;
   withdrawals: number;
   cashInHand: number;
-  profit: number;
+  profit: number; // 2% of totalSales
+  investorProfit: number; // 2% net earnings
   outstandingCredit: number;
 }
 
@@ -69,3 +77,4 @@ export interface DateFilterOption {
   label: string;
   value: 'today' | 'yesterday' | 'this_week' | 'this_month' | 'custom' | 'all';
 }
+

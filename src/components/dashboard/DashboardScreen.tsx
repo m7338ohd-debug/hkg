@@ -105,7 +105,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab }
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-4 pb-28 space-y-5">
+    <div className="max-w-5xl mx-auto p-3.5 sm:p-4 pb-28 space-y-4 sm:space-y-5">
       {/* Hero Quick Action Strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
         <button
@@ -161,37 +161,48 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab }
         </button>
       </div>
 
-      {/* Main Cash Balance Hero Banner */}
+      {/* Main Invested Amount Hero Banner (Replaces plain Live Cash Balance) */}
       <div className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white rounded-3xl p-5 sm:p-6 shadow-2xl border border-slate-800">
         <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 w-40 h-40 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xs uppercase font-extrabold tracking-wider text-emerald-400 flex items-center gap-1">
-                <Wallet className="w-4 h-4" /> Live Cash Balance
+                <Wallet className="w-4 h-4" /> Invested Capital Amount
               </span>
               <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-bold">
-                Real-Time
+                Fixed Capital
               </span>
             </div>
+
+            {/* Primary Display: Invested Capital Amount (Default ₹25,000) */}
             <div className="flex items-baseline gap-1 mt-1">
               <span className="text-2xl font-bold text-emerald-400">{settings.currency}</span>
               <span className="text-4xl sm:text-5xl font-black font-mono tracking-tight">
-                {today.cashInHand.toLocaleString('en-IN')}
+                {(settings.investedAmount || 25000).toLocaleString('en-IN')}
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-1">
-              Opening Cash: <span className="font-semibold text-slate-200">{formatCurrency(today.openingCash, settings.currency)}</span>
-            </p>
+
+            <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-300">
+              <p className="text-slate-400">
+                Live Working Cash: <span className="font-bold text-emerald-400">{formatCurrency(today.cashInHand, settings.currency)}</span>
+              </p>
+              <span>•</span>
+              <p className="text-slate-400">
+                Opening Cash: <span className="font-semibold text-slate-200">{formatCurrency(today.openingCash, settings.currency)}</span>
+              </p>
+            </div>
           </div>
 
           <div className="flex sm:flex-col items-center sm:items-end justify-between gap-3 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-800">
             <div className="text-left sm:text-right">
-              <span className="text-[10px] text-slate-400 uppercase font-bold">Today Net Profit</span>
-              <div className={`text-lg font-black ${today.profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+              <span className="text-[10px] text-emerald-400 uppercase font-extrabold">2% Daily Net Profit</span>
+              <div className="text-xl font-black text-emerald-400 font-mono">
                 {formatCurrency(today.profit, settings.currency)}
               </div>
+              <span className="text-[9px] text-slate-400 block">Based on Total Sales ({formatCurrency(today.totalSales, settings.currency)})</span>
             </div>
+
             <button
               onClick={scrollToUdharList}
               className="text-right group cursor-pointer"
@@ -201,6 +212,62 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab }
                 {formatCurrency(today.outstandingCredit, settings.currency)}
               </div>
             </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Grocery Investment Cycle & 2% Daily Profit Flow Card */}
+      <div className="bg-gradient-to-br from-emerald-900/40 via-slate-900 to-slate-900 rounded-3xl p-5 shadow-xl border border-emerald-500/20 text-white space-y-3.5">
+        <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-sm text-white">
+                Grocery Re-Investment & 2% Profit Cycle
+              </h3>
+              <p className="text-[11px] text-slate-400">Invest Capital ➔ Buy Stock ➔ Sell Goods ➔ Earn 2% Profit ➔ Re-invest</p>
+            </div>
+          </div>
+
+          <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 font-extrabold text-[10px] uppercase">
+            2% Earn Rate
+          </span>
+        </div>
+
+        {/* 4-Step Visual Cycle Diagram */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
+          <div className="p-3 bg-slate-800/80 rounded-2xl border border-slate-700/60">
+            <span className="text-[9px] uppercase font-extrabold text-slate-400 block">1. Invest Capital</span>
+            <span className="text-sm font-extrabold text-emerald-400 block mt-0.5">
+              {formatCurrency(settings.investedAmount || 25000, settings.currency)}
+            </span>
+            <span className="text-[9px] text-slate-400">Initial Investment</span>
+          </div>
+
+          <div className="p-3 bg-slate-800/80 rounded-2xl border border-slate-700/60">
+            <span className="text-[9px] uppercase font-extrabold text-rose-400 block">2. Groceries Bought</span>
+            <span className="text-sm font-extrabold text-rose-300 block mt-0.5">
+              {formatCurrency(today.purchases, settings.currency)}
+            </span>
+            <span className="text-[9px] text-slate-400">Store Purchases</span>
+          </div>
+
+          <div className="p-3 bg-slate-800/80 rounded-2xl border border-slate-700/60">
+            <span className="text-[9px] uppercase font-extrabold text-blue-400 block">3. Total Sales</span>
+            <span className="text-sm font-extrabold text-blue-300 block mt-0.5">
+              {formatCurrency(today.totalSales, settings.currency)}
+            </span>
+            <span className="text-[9px] text-slate-400">Cash + Udhar + Home</span>
+          </div>
+
+          <div className="p-3 bg-emerald-950/80 rounded-2xl border border-emerald-500/40">
+            <span className="text-[9px] uppercase font-extrabold text-emerald-400 block">4. Net 2% Profit</span>
+            <span className="text-sm font-black text-emerald-400 block mt-0.5">
+              {formatCurrency(today.profit, settings.currency)}
+            </span>
+            <span className="text-[9px] text-emerald-200">Owner Net Earnings</span>
           </div>
         </div>
       </div>

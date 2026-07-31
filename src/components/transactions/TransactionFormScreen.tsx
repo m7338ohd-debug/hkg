@@ -11,6 +11,7 @@ import {
   User,
   ArrowRight,
   Mic,
+  Home,
 } from 'lucide-react';
 import { useCashFlow } from '../../context/CashFlowContext';
 import type { TransactionType, PurchaseCategory, ExpenseCategory, WithdrawalPerson, WithdrawalReason, PaymentMethod } from '../../types';
@@ -101,13 +102,14 @@ export const TransactionFormScreen: React.FC<TransactionFormScreenProps> = ({
   const typeTabs: { id: TransactionType; label: string; icon: any; color: string }[] = [
     { id: 'credit_sale', label: 'Credit Sale (Udhar)', icon: CreditCard, color: 'border-purple-500 text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/50' },
     { id: 'credit_payment', label: 'Credit Received', icon: HandCoins, color: 'border-emerald-500 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50' },
+    { id: 'home_use', label: 'Home Use Goods', icon: Home, color: 'border-amber-500 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50' },
     { id: 'purchase', label: 'Store Purchase', icon: ShoppingCart, color: 'border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50' },
     { id: 'expense', label: 'Store Expense', icon: Receipt, color: 'border-rose-500 text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50' },
-    { id: 'withdrawal', label: 'Withdrawal', icon: Wallet, color: 'border-amber-500 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50' },
+    { id: 'withdrawal', label: 'Withdrawal', icon: Wallet, color: 'border-slate-500 text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/50' },
   ];
 
   return (
-    <div className="max-w-md sm:max-w-lg md:max-w-xl mx-auto p-4 sm:p-6 pb-28 space-y-4 sm:space-y-5">
+    <div className="max-w-md sm:max-w-lg md:max-w-xl mx-auto p-3.5 sm:p-6 pb-28 space-y-4 sm:space-y-5">
       {/* Tab Selector Header */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
         {typeTabs.map((tab) => {
@@ -138,6 +140,7 @@ export const TransactionFormScreen: React.FC<TransactionFormScreenProps> = ({
           <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
             {type === 'credit_sale' && <CreditCard className="w-5 h-5 text-purple-500" />}
             {type === 'credit_payment' && <HandCoins className="w-5 h-5 text-emerald-500" />}
+            {type === 'home_use' && <Home className="w-5 h-5 text-amber-500" />}
             {type === 'purchase' && <ShoppingCart className="w-5 h-5 text-blue-500" />}
             {type === 'expense' && <Receipt className="w-5 h-5 text-rose-500" />}
             {type === 'withdrawal' && <Wallet className="w-5 h-5 text-amber-500" />}

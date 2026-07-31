@@ -21,23 +21,32 @@ import { exportDataJSON, SAMPLE_TRANSACTIONS } from '../../db/storage';
 import { formatCurrency } from '../../utils/calculations';
 
 export const SettingsScreen: React.FC = () => {
-  const { settings, updateSettings, resetPeriodData, importBackup, showToast, toggleDarkMode } = useCashFlow();
+  const { settings, updateSettings, resetPeriodData, importBackup, showToast, toggleDarkMode, syncNow, isSyncing } = useCashFlow();
 
   const [storeName, setStoreName] = useState(settings.storeName);
   const [ownerName, setOwnerName] = useState(settings.ownerName);
   const [currency, setCurrency] = useState(settings.currency);
   const [openingCash, setOpeningCash] = useState(settings.openingCash.toString());
+  const [investedAmount, setInvestedAmount] = useState((settings.investedAmount || 25000).toString());
+  const [profitRate, setProfitRate] = useState((settings.profitRate || 2).toString());
+  const [storeSyncCode, setStoreSyncCode] = useState(settings.storeSyncCode || 'AYESHA-STORE-01');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
     const numOpening = parseFloat(openingCash);
+    const numInvested = parseFloat(investedAmount);
+    const numRate = parseFloat(profitRate);
+
     updateSettings({
       storeName: storeName.trim() || 'Provision Store',
       ownerName: ownerName.trim() || 'Store Owner',
       currency: currency.trim() || '₹',
       openingCash: isNaN(numOpening) ? 0 : numOpening,
+      investedAmount: isNaN(numInvested) ? 25000 : numInvested,
+      profitRate: isNaN(numRate) ? 2 : numRate,
+      storeSyncCode: storeSyncCode.trim() || 'AYESHA-STORE-01',
     });
   };
 
@@ -94,19 +103,24 @@ export const SettingsScreen: React.FC = () => {
           </div>
           <div>
             <h2 className="font-extrabold text-base text-slate-900 dark:text-white">Store Settings</h2>
-            <p className="text-xs text-slate-400">Configure profile, currency & local backup</p>
+            <p className="text-xs text-slate-400">Configure profile, 2% profit, 25k investment & cloud sync</p>
           </div>
         </div>
 
-        <span className="flex items-center gap-1 text-[10px] font-bold uppercase px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400">
-          <ShieldCheck className="w-3.5 h-3.5" /> 100% Offline
-        </span>
+        <button
+          onClick={syncNow}
+          className={`flex items-center gap-1 text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 cursor-pointer border border-emerald-500/30 ${
+            isSyncing ? 'animate-pulse' : ''
+          }`}
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} /> 4-Staff Sync
+        </button>
       </div>
 
       {/* Store Profile Settings Form */}
       <form onSubmit={handleSaveProfile} className="bg-white dark:bg-slate-800 p-5 rounded-3xl shadow-lg border border-slate-200 dark:border-slate-700 space-y-4">
         <h3 className="font-bold text-sm text-slate-900 dark:text-white pb-2 border-b border-slate-100 dark:border-slate-700">
-          Store Information
+          Store Profile & Investment Capital
         </h3>
 
         <div>
@@ -133,6 +147,38 @@ export const SettingsScreen: React.FC = () => {
 
         <div className="grid grid-cols-2 gap-3">
           <div>
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+              Invested Amount ({currency})
+            </label>
+            <input
+              type="number"
+              step="any"
+              required
+              value={investedAmount}
+              onChange={(e) => setInvestedAmount(e.target.value)}
+              placeholder="25000"
+              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-bold text-emerald-600 dark:text-emerald-400 focus:ring-2 focus:ring-emerald-500"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+              Profit Rate (%)
+            </label>
+            <input
+              type="number"
+              step="any"
+              required
+              value={profitRate}
+              onChange={(e) => setProfitRate(e.target.value)}
+              placeholder="2"
+              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
             <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Currency Symbol</label>
             <input
               type="text"
@@ -155,6 +201,21 @@ export const SettingsScreen: React.FC = () => {
               className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
             />
           </div>
+        </div>
+
+        <div>
+          <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+            4-Staff Store Sync Code (For Vercel Multi-Mobile Sync)
+          </label>
+          <input
+            type="text"
+            required
+            value={storeSyncCode}
+            onChange={(e) => setStoreSyncCode(e.target.value)}
+            placeholder="AYESHA-STORE-01"
+            className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
+          />
+          <p className="text-[10px] text-slate-400 mt-1">All 4 store staff members entering data on their mobiles should use this same sync code.</p>
         </div>
 
         <button
