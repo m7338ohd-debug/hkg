@@ -39,6 +39,8 @@ interface CashFlowContextType {
   importBackup: (jsonStr: string) => { success: boolean; message: string };
   toggleDarkMode: () => void;
   syncNow: () => Promise<void>;
+  setManualDailyProfit: (date: string, amount?: number, notes?: string) => void;
+  loginStore: (syncCode: string, userName: string) => Promise<boolean>;
 }
 
 const CashFlowContext = createContext<CashFlowContextType | undefined>(undefined);
@@ -129,7 +131,7 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       } catch (err) {
         // Silently handle network blips
       }
-    }, 2000);
+    }, 1500);
 
     return () => {
       isMounted = false;
@@ -295,6 +297,58 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return res;
   };
 
+  const setManualDailyProfit = (date: string, amount?: number, notes?: string) => {
+    const updatedProfits = { ...(settings.manualDailyProfits || {}) };
+
+    if (amount === undefined || amount === null) {
+      delete updatedProfits[date];
+      updateSettings({ manualDailyProfits: updatedProfits });
+      showToast('Reset Daily Profit', `Reset to auto calculation for ${date}`);
+      return;
+    }
+
+    if (notes && notes.trim()) {
+      updatedProfits[date] = { amount, notes: notes.trim() };
+    } else {
+      updatedProfits[date] = amount;
+    }
+
+    updateSettings({ manualDailyProfits: updatedProfits });
+    showToast('Daily Profit Updated', `${settings.currency}${amount} set as profit for ${date}`);
+  };
+
+  const loginStore = async (syncCode: string, userName: string): Promise<boolean> => {
+    setIsSyncing(true);
+    const cleanCode = (syncCode || 'AYESHA-STORE-01').trim().toUpperCase();
+
+    try {
+      const remote = await pullFromCloudSync(cleanCode);
+      let mergedT = [...transactions];
+      let mergedS = { ...settings, storeSyncCode: cleanCode, activeUser: userName, isLoggedIn: true };
+
+      if (remote && Array.isArray(remote.transactions)) {
+        mergedT = mergeTransactions(transactions, remote.transactions);
+        if (remote.settings) {
+          mergedS = { ...remote.settings, ...mergedS, storeSyncCode: cleanCode, activeUser: userName, isLoggedIn: true };
+        }
+      }
+
+      setTransactionsState(mergedT);
+      saveTransactions(mergedT);
+      setSettingsState(mergedS);
+      saveSettings(mergedS);
+
+      await pushToCloudSync(cleanCode, mergedS, mergedT);
+      showToast('Store Logged In & Synced!', `Connected as ${userName} (Code: ${cleanCode})`);
+      return true;
+    } catch (err) {
+      showToast('Login Warning', 'Using offline cached data. Will sync when reconnected.', 'info');
+      return true;
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   return (
     <CashFlowContext.Provider
       value={{
@@ -313,6 +367,8 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         importBackup,
         toggleDarkMode,
         syncNow,
+        setManualDailyProfit,
+        loginStore,
       }}
     >
       {children}

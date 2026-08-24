@@ -107,6 +107,7 @@ export const calculateSummary = (
   let purchases = 0;
   let expenses = 0;
   let withdrawals = 0;
+  let homeMaintenanceSpent = 0;
 
   filtered.forEach((t) => {
     switch (t.type) {
@@ -118,6 +119,7 @@ export const calculateSummary = (
         break;
       case 'home_use':
         homeUseSales += t.amount;
+        homeMaintenanceSpent += t.amount;
         break;
       case 'credit_payment':
         creditReceived += t.amount;
@@ -127,9 +129,19 @@ export const calculateSummary = (
         break;
       case 'expense':
         expenses += t.amount;
+        if (
+          t.category &&
+          (t.category.toLowerCase().includes('maintenance') ||
+            t.category.toLowerCase().includes('rent') ||
+            t.category.toLowerCase().includes('house') ||
+            t.category.toLowerCase().includes('home'))
+        ) {
+          homeMaintenanceSpent += t.amount;
+        }
         break;
       case 'withdrawal':
         withdrawals += t.amount;
+        homeMaintenanceSpent += t.amount;
         break;
     }
   });
@@ -145,8 +157,26 @@ export const calculateSummary = (
   // Total Sales includes Cash Sales, Udhar Given, and Home Use entries
   const totalSales = cashSales + creditSales + homeUseSales;
   
-  // Daily Profit calculation is 2% of Total Sales
-  const profit = totalSales * (profitRate / 100);
+  // Auto-calculated Profit is 2% of Total Sales
+  const autoProfit = totalSales * (profitRate / 100);
+  
+  // Check if manual profit has been set for target date
+  const rawProfitVal = settings.manualDailyProfits ? settings.manualDailyProfits[dateToUse] : undefined;
+  const isManualProfit = rawProfitVal !== undefined;
+
+  let manualProfitVal: number | undefined = undefined;
+  let manualProfitNotesVal: string | undefined = undefined;
+
+  if (isManualProfit) {
+    if (typeof rawProfitVal === 'object' && rawProfitVal !== null) {
+      manualProfitVal = rawProfitVal.amount;
+      manualProfitNotesVal = rawProfitVal.notes;
+    } else if (typeof rawProfitVal === 'number') {
+      manualProfitVal = rawProfitVal;
+    }
+  }
+
+  const profit = isManualProfit && manualProfitVal !== undefined ? manualProfitVal : autoProfit;
   const investorProfit = profit;
 
   const cashInHand = openingCash + cashSales + creditReceived - purchases - expenses - withdrawals;
@@ -165,8 +195,13 @@ export const calculateSummary = (
     withdrawals,
     cashInHand,
     profit,
+    autoProfit,
+    manualProfit: manualProfitVal,
+    manualProfitNotes: manualProfitNotesVal,
+    isManualProfit,
     investorProfit,
     outstandingCredit,
+    homeMaintenanceSpent,
   };
 };
 

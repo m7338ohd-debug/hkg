@@ -44,6 +44,9 @@ export interface StoreSettings {
   darkMode: boolean;
   autoBackupReminder: boolean;
   lastBackupDate?: string;
+  manualDailyProfits?: Record<string, number | { amount: number; notes?: string }>; // Record of YYYY-MM-DD -> profit amount or object
+  activeUser?: string; // e.g. 'Owner / Ayesha', 'Mom / Mother', 'Employee'
+  isLoggedIn?: boolean; // Whether phone is logged into a store code
 }
 
 export interface CustomerCreditSummary {
@@ -68,9 +71,14 @@ export interface DailySummary {
   expenses: number;
   withdrawals: number;
   cashInHand: number;
-  profit: number; // 2% of totalSales
-  investorProfit: number; // 2% net earnings
+  profit: number; // Final daily profit used
+  autoProfit: number; // Auto-calculated 2% or Sales - Purchases
+  manualProfit?: number; // User manually entered daily profit if set
+  manualProfitNotes?: string; // Optional description/notes for manual profit
+  isManualProfit: boolean; // Whether profit was manually overridden
+  investorProfit: number;
   outstandingCredit: number;
+  homeMaintenanceSpent: number; // Total spent on Home Maintenance & Personal drawings
 }
 
 export interface DateFilterOption {

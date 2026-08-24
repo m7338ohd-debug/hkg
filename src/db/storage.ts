@@ -13,6 +13,9 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   storeSyncCode: 'AYESHA-STORE-01',
   darkMode: true,
   autoBackupReminder: true,
+  manualDailyProfits: {},
+  activeUser: 'Owner / Ayesha',
+  isLoggedIn: true,
 };
 
 const getTodayString = (offsetDays = 0) => {

@@ -1,15 +1,19 @@
 import React from 'react';
-import { Store, Moon, Sun, RefreshCw, Radio } from 'lucide-react';
+import { Store, Moon, Sun, RefreshCw, Radio, Smartphone, LogIn, UserCheck } from 'lucide-react';
 import { useCashFlow } from '../../context/CashFlowContext';
-import { formatCurrency, calculateSummary } from '../../utils/calculations';
+import { formatCurrency } from '../../utils/calculations';
 
 interface HeaderProps {
   onOpenQuickForm?: (type: string) => void;
+  onOpenDownloadApp?: () => void;
+  onOpenLoginModal?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = () => {
-  const { settings, transactions, toggleDarkMode, isSyncing, syncNow } = useCashFlow();
-  const summary = calculateSummary(transactions, settings);
+export const Header: React.FC<HeaderProps> = ({ onOpenDownloadApp, onOpenLoginModal }) => {
+  const { settings, toggleDarkMode, isSyncing, syncNow } = useCashFlow();
+
+  const activeUserLabel = settings.activeUser || 'Owner / Ayesha';
+  const syncCodeLabel = settings.storeSyncCode || 'AYESHA-STORE-01';
 
   return (
     <header className="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-3 sm:px-4 py-2.5 shadow-xs">
@@ -24,23 +28,58 @@ export const Header: React.FC<HeaderProps> = () => {
               <h1 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base leading-tight tracking-tight truncate max-w-[140px] sm:max-w-xs">
                 {settings.storeName}
               </h1>
-              <button
-                onClick={syncNow}
-                className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] uppercase font-extrabold tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/90 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 hover:bg-emerald-200 cursor-pointer transition-all"
-                title="Tap to sync across 4 mobile devices"
-              >
-                <Radio className={`w-3 h-3 text-emerald-500 ${isSyncing ? 'animate-ping' : ''}`} />
-                <span>4-Staff Sync</span>
-              </button>
+              {onOpenLoginModal ? (
+                <button
+                  onClick={onOpenLoginModal}
+                  className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-extrabold tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/90 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 hover:bg-emerald-200 cursor-pointer transition-all"
+                  title="Click to switch Store Login or PIN"
+                >
+                  <UserCheck className="w-3 h-3 text-emerald-500" />
+                  <span className="truncate max-w-[100px]">{activeUserLabel}</span>
+                </button>
+              ) : (
+                <button
+                  onClick={syncNow}
+                  className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] uppercase font-extrabold tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/90 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 hover:bg-emerald-200 cursor-pointer transition-all"
+                  title="Tap to sync across 4 mobile devices"
+                >
+                  <Radio className={`w-3 h-3 text-emerald-500 ${isSyncing ? 'animate-ping' : ''}`} />
+                  <span>{syncCodeLabel}</span>
+                </button>
+              )}
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              Owner: <span className="font-medium text-slate-700 dark:text-slate-300">{settings.ownerName}</span>
+              User: <span className="font-semibold text-slate-700 dark:text-slate-300">{activeUserLabel}</span> • Code: <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">{syncCodeLabel}</span>
             </p>
           </div>
         </div>
 
         {/* Right Action Widgets */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Mobile App Download Button */}
+          {onOpenDownloadApp && (
+            <button
+              onClick={onOpenDownloadApp}
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs shadow-md shadow-emerald-600/20 cursor-pointer active:scale-95 transition-all"
+              title="Download & Install Mobile App on Android/iPhone"
+            >
+              <Smartphone className="w-4 h-4" />
+              <span className="hidden sm:inline">App Download</span>
+            </button>
+          )}
+
+          {/* Store Login Button */}
+          {onOpenLoginModal && (
+            <button
+              onClick={onOpenLoginModal}
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 font-extrabold text-xs border border-slate-200 dark:border-slate-700 cursor-pointer active:scale-95 transition-all"
+              title="Store Login & Sync Settings"
+            >
+              <LogIn className="w-4 h-4 text-emerald-500" />
+              <span className="hidden sm:inline">Store Login</span>
+            </button>
+          )}
+
           {/* Quick Sync Button */}
           <button
             onClick={syncNow}
@@ -53,7 +92,7 @@ export const Header: React.FC<HeaderProps> = () => {
           </button>
 
           {/* Quick Invested Amount Pill */}
-          <div className="hidden sm:flex flex-col items-end px-3 py-1 bg-slate-100 dark:bg-slate-800/70 rounded-lg border border-slate-200 dark:border-slate-700">
+          <div className="hidden md:flex flex-col items-end px-3 py-1 bg-slate-100 dark:bg-slate-800/70 rounded-lg border border-slate-200 dark:border-slate-700">
             <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Invested Capital</span>
             <span className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">
               {formatCurrency(settings.investedAmount || 25000, settings.currency)}

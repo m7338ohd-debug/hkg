@@ -77,13 +77,18 @@ export const broadcastLocalChange = (settings: StoreSettings, transactions: Tran
   }
 };
 
+export const sanitizeSyncCode = (code: string): string => {
+  const clean = (code || 'AYESHA-STORE-01').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '_');
+  return clean || 'AYESHA-STORE-01';
+};
+
 // Push live updates to Cloud (Firebase RTDB REST + KVDB backup)
 export const pushToCloudSync = async (
   syncCode: string,
   settings: StoreSettings,
   transactions: Transaction[]
 ): Promise<boolean> => {
-  const code = (syncCode || 'AYESHA-STORE-01').trim().toUpperCase();
+  const code = sanitizeSyncCode(syncCode);
   broadcastLocalChange(settings, transactions);
 
   const payload: CloudPayload = {
@@ -124,7 +129,7 @@ export const pushToCloudSync = async (
 export const pullFromCloudSync = async (
   syncCode: string
 ): Promise<{ settings: StoreSettings; transactions: Transaction[] } | null> => {
-  const code = (syncCode || 'AYESHA-STORE-01').trim().toUpperCase();
+  const code = sanitizeSyncCode(syncCode);
   if (!navigator.onLine) return null;
 
   try {

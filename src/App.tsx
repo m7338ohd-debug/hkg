@@ -9,14 +9,28 @@ import { TransactionFormScreen } from './components/transactions/TransactionForm
 import { HistoryScreen } from './components/history/HistoryScreen';
 import { ReportsScreen } from './components/reports/ReportsScreen';
 import { SettingsScreen } from './components/settings/SettingsScreen';
+import { DownloadAppModal } from './components/common/DownloadAppModal';
+import { InstallBanner } from './components/common/InstallBanner';
+import { StoreLoginModal } from './components/common/StoreLoginModal';
 
 const MainApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
+  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+
+  const handleOpenDownloadApp = () => setIsDownloadModalOpen(true);
+  const handleCloseDownloadApp = () => setIsDownloadModalOpen(false);
+
+  const handleOpenLoginModal = () => setIsLoginModalOpen(true);
+  const handleCloseLoginModal = () => setIsLoginModalOpen(false);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200">
       {/* Top Header */}
-      <Header />
+      <Header
+        onOpenDownloadApp={handleOpenDownloadApp}
+        onOpenLoginModal={handleOpenLoginModal}
+      />
 
       {/* Global Real-time Toast Notifications */}
       <Toast />
@@ -28,8 +42,17 @@ const MainApp: React.FC = () => {
         {activeTab === 'transactions' && <TransactionFormScreen />}
         {activeTab === 'history' && <HistoryScreen />}
         {activeTab === 'reports' && <ReportsScreen />}
-        {activeTab === 'settings' && <SettingsScreen />}
+        {activeTab === 'settings' && <SettingsScreen onOpenDownloadApp={handleOpenDownloadApp} />}
       </main>
+
+      {/* Floating Mobile App Install Banner */}
+      <InstallBanner onOpenModal={handleOpenDownloadApp} />
+
+      {/* Download Mobile App Modal Dialog */}
+      <DownloadAppModal isOpen={isDownloadModalOpen} onClose={handleCloseDownloadApp} />
+
+      {/* Store Mobile Login Modal Dialog */}
+      <StoreLoginModal isOpen={isLoginModalOpen} onClose={handleCloseLoginModal} />
 
       {/* Bottom Mobile Navigation */}
       <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />

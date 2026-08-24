@@ -15,12 +15,20 @@ import {
   FileJson,
   ShieldCheck,
   Sparkles,
+  Smartphone,
+  QrCode,
 } from 'lucide-react';
 import { useCashFlow } from '../../context/CashFlowContext';
 import { exportDataJSON, SAMPLE_TRANSACTIONS } from '../../db/storage';
 import { formatCurrency } from '../../utils/calculations';
+import { usePWAInstall } from '../../hooks/usePWAInstall';
 
-export const SettingsScreen: React.FC = () => {
+interface SettingsScreenProps {
+  onOpenDownloadApp?: () => void;
+}
+
+export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onOpenDownloadApp }) => {
+  const { isInstalled, isInstallable, promptInstall } = usePWAInstall();
   const { settings, updateSettings, resetPeriodData, importBackup, showToast, toggleDarkMode, syncNow, isSyncing } = useCashFlow();
 
   const [storeName, setStoreName] = useState(settings.storeName);
@@ -252,6 +260,48 @@ export const SettingsScreen: React.FC = () => {
                 settings.darkMode ? 'translate-x-6' : 'translate-x-0'
               }`}
             />
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile App Download & PWA Card */}
+      <div className="bg-gradient-to-br from-emerald-900 to-slate-900 text-white p-5 rounded-3xl shadow-xl border border-emerald-500/30 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-emerald-500/20 rounded-2xl text-emerald-400 border border-emerald-500/30">
+              <Smartphone className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-sm text-white flex items-center gap-2">
+                Mobile App Download
+                {isInstalled && (
+                  <span className="text-[9px] bg-emerald-400 text-slate-950 font-black px-2 py-0.5 rounded-full">
+                    Installed ✓
+                  </span>
+                )}
+              </h3>
+              <p className="text-xs text-emerald-200/80">Android APK, iOS Web App & QR Code</p>
+            </div>
+          </div>
+        </div>
+
+        <p className="text-xs text-slate-300">
+          Install the 100% offline Provision Cash Flow app on your mobile phone. Access your store ledger with 1 tap from your home screen.
+        </p>
+
+        <div className="grid grid-cols-2 gap-2.5 pt-1">
+          <button
+            onClick={onOpenDownloadApp}
+            className="py-3 px-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-md transition-all active:scale-95"
+          >
+            <Download className="w-4 h-4" /> Download App
+          </button>
+
+          <button
+            onClick={onOpenDownloadApp}
+            className="py-3 px-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 cursor-pointer border border-white/20 transition-all"
+          >
+            <QrCode className="w-4 h-4" /> Scan QR Code
           </button>
         </div>
       </div>

@@ -1,0 +1,19 @@
+{
+  "short_name": "CashFlow",
+  "name": "Provision Store Cash Flow Manager",
+  "description": "Offline Cash Flow & Store Finance Management System for Provision Stores",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0f172a",
+  "theme_color": "#059669",
+  "display": "standalone",
+  "orientation": "portrait",
+  "scope": "/"
+}

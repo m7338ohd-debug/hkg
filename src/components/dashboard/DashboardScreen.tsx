@@ -13,6 +13,9 @@ import {
   X,
   Users,
   Search,
+  MessageSquare,
+  Send,
+  PlusCircle,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -29,6 +32,9 @@ import { useCashFlow } from '../../context/CashFlowContext';
 import { formatCurrency, calculatePeriodSummary, getChartData, getCustomerCreditSummaries, getTodayDateString, formatDateDisplay } from '../../utils/calculations';
 import type { CustomerCreditSummary } from '../../types';
 import type { ActiveTab } from '../common/BottomNav';
+import { ProfitCard } from './ProfitCard';
+import { MaintenanceCard } from './MaintenanceCard';
+import { UdharReminderModal } from '../common/UdharReminderModal';
 
 interface DashboardScreenProps {
   setActiveTab: (tab: ActiveTab) => void;
@@ -50,6 +56,15 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab }
   const [collectTarget, setCollectTarget] = useState<CustomerCreditSummary | null>(null);
   const [customCollectAmount, setCustomCollectAmount] = useState<string>('');
   const [payMethod, setPayMethod] = useState<'Cash' | 'UPI'>('Cash');
+
+  // Udhar Reminder & Adjustment Modal State
+  const [reminderTarget, setReminderTarget] = useState<CustomerCreditSummary | null>(null);
+  const [reminderInitialTab, setReminderInitialTab] = useState<'reminder' | 'adjustment'>('reminder');
+
+  const handleOpenReminderModal = (cust: CustomerCreditSummary, tab: 'reminder' | 'adjustment' = 'reminder') => {
+    setReminderTarget(cust);
+    setReminderInitialTab(tab);
+  };
 
   const periodSummary = calculatePeriodSummary(transactions, settings);
   const today = periodSummary.today;
@@ -216,6 +231,12 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab }
         </div>
       </div>
 
+      {/* Interactive Daily Profit Card (Manual Entry + Auto Purchases/Sales Calculation) */}
+      <ProfitCard />
+
+      {/* Home Maintenance & Family Draw Expense Card */}
+      <MaintenanceCard />
+
       {/* Grocery Investment Cycle & 2% Daily Profit Flow Card */}
       <div className="bg-gradient-to-br from-emerald-900/40 via-slate-900 to-slate-900 rounded-3xl p-5 shadow-xl border border-emerald-500/20 text-white space-y-3.5">
         <div className="flex items-center justify-between pb-2 border-b border-slate-800">
@@ -335,14 +356,26 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab }
                     <span className="text-[9px] uppercase font-bold text-slate-400">Udhar Due</span>
                   </div>
 
-                  {/* Inline Quick Action Button */}
-                  <button
-                    onClick={() => handleOpenCollectModal(cust)}
-                    className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-md active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
-                  >
-                    <HandCoins className="w-3.5 h-3.5" />
-                    Receive
-                  </button>
+                  {/* Inline Quick Action Buttons */}
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => handleOpenReminderModal(cust, 'reminder')}
+                      className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200 font-bold text-xs shadow-xs active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
+                      title="Send WhatsApp or SMS Payment Reminder"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span className="hidden sm:inline">Message</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleOpenReminderModal(cust, 'adjustment')}
+                      className="px-3 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs shadow-md active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
+                      title="Receive or Adjust Udhar Balance"
+                    >
+                      <HandCoins className="w-3.5 h-3.5" />
+                      Adjust
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -666,6 +699,14 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab }
           </div>
         </div>
       )}
+
+      {/* WhatsApp / SMS Reminder & Manual Udhar Adjustment Modal */}
+      <UdharReminderModal
+        isOpen={!!reminderTarget}
+        onClose={() => setReminderTarget(null)}
+        targetCustomer={reminderTarget}
+        initialTab={reminderInitialTab}
+      />
     </div>
   );
 };
