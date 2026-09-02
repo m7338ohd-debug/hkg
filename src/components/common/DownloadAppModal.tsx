@@ -94,9 +94,11 @@ export const DownloadAppModal: React.FC<DownloadAppModalProps> = ({ isOpen, onCl
           </button>
 
           <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white shadow-lg shrink-0">
-              <Smartphone className="w-6 h-6" />
-            </div>
+            <img
+              src="/app_logo_3d.png"
+              alt="Provision Store Cash Flow Mobile App 3D Logo"
+              className="w-13 h-13 rounded-2xl shadow-xl border-2 border-white/40 object-cover shrink-0"
+            />
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-lg font-extrabold tracking-tight">Download Mobile App</h3>

@@ -38,9 +38,11 @@ export const InstallBanner: React.FC<InstallBannerProps> = ({ onOpenModal }) => 
         className="bg-slate-900/95 dark:bg-slate-900/95 text-white p-3.5 rounded-2xl shadow-2xl border border-emerald-500/40 backdrop-blur-md flex items-center justify-between gap-3 cursor-pointer group hover:border-emerald-400 transition-all"
       >
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-500/30 shrink-0">
-            <Smartphone className="w-5 h-5 group-hover:scale-110 transition-transform" />
-          </div>
+          <img
+            src="/app_logo_3d.png"
+            alt="Provision Store Cash Flow Mobile App 3D Logo"
+            className="w-10 h-10 rounded-xl shadow-md border border-emerald-500/40 object-cover shrink-0 group-hover:scale-105 transition-transform"
+          />
           <div>
             <div className="flex items-center gap-1.5">
               <h4 className="text-xs font-extrabold text-white leading-tight">Install Mobile App</h4>
