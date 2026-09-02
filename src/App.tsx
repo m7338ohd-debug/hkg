@@ -10,6 +10,7 @@ import { HistoryScreen } from './components/history/HistoryScreen';
 import { ReportsScreen } from './components/reports/ReportsScreen';
 import { SettingsScreen } from './components/settings/SettingsScreen';
 import { HomeFamilyScreen } from './components/home/HomeFamilyScreen';
+import { StoreLLMScreen } from './components/store_llm/StoreLLMScreen';
 import { DownloadAppModal } from './components/common/DownloadAppModal';
 import { InstallBanner } from './components/common/InstallBanner';
 import { StoreLoginModal } from './components/common/StoreLoginModal';
@@ -45,10 +46,11 @@ const MainApp: React.FC = () => {
 
   return (
     <div className="h-dvh min-h-dvh max-h-dvh w-full overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col justify-between transition-colors duration-200">
-      {/* Top Header */}
+      {/* Top Header - Store Icon click opens Settings */}
       <Header
         onOpenDownloadApp={handleOpenDownloadApp}
         onOpenLoginModal={handleOpenLoginModal}
+        onOpenSettings={() => setActiveTab('settings')}
       />
 
       {/* Global Real-time Toast Notifications */}
@@ -69,6 +71,7 @@ const MainApp: React.FC = () => {
         {activeTab === 'history' && <HistoryScreen />}
         {activeTab === 'reports' && <ReportsScreen />}
         {activeTab === 'home_family' && <HomeFamilyScreen />}
+        {activeTab === 'store_llm' && <StoreLLMScreen setActiveTab={setActiveTab} />}
         {activeTab === 'settings' && <SettingsScreen onOpenDownloadApp={handleOpenDownloadApp} />}
       </main>
 

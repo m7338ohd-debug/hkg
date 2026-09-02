@@ -369,3 +369,38 @@ export const getChartData = (transactions: Transaction[], days = 7) => {
 
   return result;
 };
+
+export interface StoreLLMProfitMetrics {
+  cashSales: number;
+  cashSalesProfitRate: number;
+  cashSalesProfit: number; // 2% of daily cash sales
+  manualPurchaseProfit: number; // Manually added purchase profit
+  totalProfit: number; // cashSalesProfit + manualPurchaseProfit
+  averageProfit: number; // (cashSalesProfit + manualPurchaseProfit) / 2 -> My One Day Earning
+  blendedProfitMargin: number; // (averageProfit / cashSales) * 100
+}
+
+export const calculateStoreLLMProfitMetrics = (
+  cashSales: number,
+  profitRate = 2,
+  manualPurchaseProfit = 0
+): StoreLLMProfitMetrics => {
+  const cashSalesProfit = (cashSales * profitRate) / 100;
+  const safePurchaseProfit = Math.max(0, manualPurchaseProfit);
+  const totalProfit = cashSalesProfit + safePurchaseProfit;
+  // User Formula: Take the average of both profits as "My One Day Earning"
+  const averageProfit = (cashSalesProfit + safePurchaseProfit) / 2;
+  const blendedProfitMargin = cashSales > 0 ? (averageProfit / cashSales) * 100 : profitRate;
+
+  return {
+    cashSales,
+    cashSalesProfitRate: profitRate,
+    cashSalesProfit,
+    manualPurchaseProfit: safePurchaseProfit,
+    totalProfit,
+    averageProfit,
+    blendedProfitMargin,
+  };
+};
+
+

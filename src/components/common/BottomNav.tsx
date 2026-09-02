@@ -1,7 +1,7 @@
 import React from 'react';
-import { LayoutDashboard, Calculator, PlusCircle, History, FileText, Settings, Home } from 'lucide-react';
+import { LayoutDashboard, Calculator, PlusCircle, History, FileText, Bot, Home } from 'lucide-react';
 
-export type ActiveTab = 'dashboard' | 'calculator' | 'transactions' | 'history' | 'reports' | 'home_family' | 'settings';
+export type ActiveTab = 'dashboard' | 'calculator' | 'transactions' | 'history' | 'reports' | 'home_family' | 'store_llm' | 'settings';
 
 interface BottomNavProps {
   activeTab: ActiveTab;
@@ -16,7 +16,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab })
     { id: 'history', label: 'History', icon: History },
     { id: 'reports', label: 'Reports', icon: FileText },
     { id: 'home_family', label: 'Home', icon: Home },
-    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'store_llm', label: 'Store LLM', icon: Bot },
   ];
 
   return (
