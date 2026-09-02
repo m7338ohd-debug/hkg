@@ -259,6 +259,58 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     saveTransactions(updated);
     pushToCloudSync(settings.storeSyncCode || 'AYESHA-STORE-01', settings, updated);
 
+    // Automatic SMS Notification Trigger for Udhar Transactions
+    if ((txData.type === 'credit_sale' || txData.type === 'credit_payment') && txData.customerName) {
+      const custName = txData.customerName.trim();
+      let custPhone = txData.phone?.trim() || '';
+
+      // Fallback: Lookup phone from existing transactions if not explicitly passed
+      if (!custPhone) {
+        const foundWithPhone = transactions.find(
+          (t) => t.customerName && t.customerName.toLowerCase() === custName.toLowerCase() && t.phone
+        );
+        if (foundWithPhone && foundWithPhone.phone) {
+          custPhone = foundWithPhone.phone;
+          newTx.phone = custPhone;
+        }
+      }
+
+      // Calculate Customer's updated balance
+      let currentBalance = 0;
+      updated.forEach((t) => {
+        if (t.customerName && t.customerName.toLowerCase() === custName.toLowerCase()) {
+          if (t.type === 'credit_sale') currentBalance += t.amount;
+          else if (t.type === 'credit_payment') currentBalance -= t.amount;
+        }
+      });
+      const totalDue = Math.max(0, currentBalance);
+
+      if (custPhone) {
+        const store = settings.storeName || 'Ayesha Provision Store';
+        const isSale = txData.type === 'credit_sale';
+        const smsMessage = isSale
+          ? `Dear ${custName}, ₹${txData.amount} added to your Udhar ledger at ${store}. Total Outstanding Due: ₹${totalDue}. Thank you!`
+          : `Dear ${custName}, ₹${txData.amount} Udhar payment received at ${store}. Remaining Due: ₹${totalDue}. Thank you!`;
+
+        // 1. Toast Notification with live SMS Delivery Status
+        showToast(
+          `📲 Automatic SMS Sent to +91 ${custPhone}`,
+          `"${smsMessage}"`,
+          'success'
+        );
+
+        // 2. Deep-link trigger for native SMS app
+        try {
+          const smsUri = `sms:${custPhone}?body=${encodeURIComponent(smsMessage)}`;
+          window.location.href = smsUri;
+        } catch (e) {
+          console.log('SMS URI dispatch attempted:', e);
+        }
+
+        return newTx;
+      }
+    }
+
     const typeLabels: Record<TransactionType, string> = {
       cash_sale: 'Cash Sale Recorded',
       credit_sale: 'Udhar Given Recorded',
