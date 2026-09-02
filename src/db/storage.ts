@@ -94,58 +94,20 @@ export const saveSettings = (settings: StoreSettings): void => {
   }
 };
 
-export const getInitialSampleTransactions = (): Transaction[] => {
-  const today = new Date().toISOString().split('T')[0];
-  const nowTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-  return [
-    {
-      id: `tx_init_1`,
-      type: 'cash_sale',
-      amount: 15000,
-      date: today,
-      time: '10:30 AM',
-      notes: 'Daily counter cash sales',
-      createdAt: Date.now() - 3600000 * 4,
-    },
-    {
-      id: `tx_init_2`,
-      type: 'credit_sale',
-      amount: 2500,
-      date: today,
-      time: '11:45 AM',
-      customerName: 'Rahul Kumar',
-      phone: '9876543210',
-      notes: 'Monthly provision udhar',
-      createdAt: Date.now() - 3600000 * 2,
-    },
-    {
-      id: `tx_init_3`,
-      type: 'purchase',
-      amount: 8000,
-      date: today,
-      time: '01:15 PM',
-      category: 'Groceries',
-      notes: 'Wholesale stock purchase',
-      createdAt: Date.now() - 3600000 * 1,
-    },
-  ];
-};
-
 export const loadTransactions = (): Transaction[] => {
   try {
     const data = localStorage.getItem(TRANSACTIONS_KEY);
     if (data) {
       const parsed = JSON.parse(data);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
         return parsed;
       }
     }
   } catch (e) {
     console.error('Error loading transactions from storage', e);
   }
-  const initData = getInitialSampleTransactions();
-  saveTransactions(initData);
-  return initData;
+  saveTransactions([]);
+  return [];
 };
 
 export const saveTransactions = (transactions: Transaction[]): void => {

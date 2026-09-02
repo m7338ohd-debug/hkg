@@ -516,21 +516,47 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return false;
     }
 
-    const updatedSettings: StoreSettings = {
+    const digitsOnly = cleanPhone.replace(/[^0-9]/g, '');
+    const phoneSyncCode = digitsOnly ? `STORE_${digitsOnly}` : (settings.storeSyncCode || 'AYESHA-STORE-01');
+
+    let currentT = [...transactions];
+    let updatedSettings: StoreSettings = {
       ...settings,
       mobileNumber: cleanPhone,
+      storeSyncCode: phoneSyncCode,
       isPhoneVerified: true,
       activeUser: userName,
       isLoggedIn: true,
       lastLoginTimestamp: Date.now(),
     };
 
+    try {
+      // Pull remote data for this specific phone number from Cloud
+      const remote = await pullFromCloudSync(phoneSyncCode);
+      if (remote) {
+        if (Array.isArray(remote.transactions)) {
+          currentT = mergeTransactions(transactions, remote.transactions);
+        }
+        if (remote.settings) {
+          updatedSettings = {
+            ...remote.settings,
+            ...updatedSettings,
+            storeSyncCode: phoneSyncCode,
+          };
+        }
+      }
+    } catch (e) {
+      console.log('Mobile cloud sync fetch:', e);
+    }
+
+    setTransactionsState(currentT);
+    saveTransactions(currentT);
     setSettingsState(updatedSettings);
     saveSettings(updatedSettings);
 
     try {
-      await pushToCloudSync(updatedSettings.storeSyncCode || 'AYESHA-STORE-01', updatedSettings, transactions);
-      showToast('Mobile Verified & Logged In!', `Connected via mobile: ${cleanPhone}`);
+      await pushToCloudSync(phoneSyncCode, updatedSettings, currentT);
+      showToast('Mobile Verified & Synced!', `Connected via mobile: ${cleanPhone}`);
       return true;
     } catch (e) {
       showToast('Mobile Verified', `Logged in as ${userName}`);
