@@ -29,7 +29,7 @@ interface SettingsScreenProps {
 
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onOpenDownloadApp }) => {
   const { isInstalled, isInstallable, promptInstall } = usePWAInstall();
-  const { settings, updateSettings, resetPeriodData, importBackup, showToast, toggleDarkMode, syncNow, isSyncing } = useCashFlow();
+  const { settings, updateSettings, resetPeriodData, importBackup, showToast, toggleDarkMode, syncNow, isSyncing, logoutStore } = useCashFlow();
 
   const [storeName, setStoreName] = useState(settings.storeName);
   const [ownerName, setOwnerName] = useState(settings.ownerName);
@@ -121,7 +121,46 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onOpenDownloadAp
             isSyncing ? 'animate-pulse' : ''
           }`}
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} /> 4-Staff Sync
+          <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} /> Sync
+        </button>
+      </div>
+
+      {/* Mobile Device Identity & Auth Session Card */}
+      <div className="bg-gradient-to-r from-emerald-950/80 via-slate-900 to-slate-900 border border-emerald-500/40 p-4 rounded-3xl text-white space-y-3 shadow-lg">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-emerald-400" />
+            <h3 className="font-extrabold text-xs text-emerald-300 uppercase tracking-wider">Active Device Session</h3>
+          </div>
+          <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">
+            Authenticated ✓
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 text-xs bg-slate-950/60 p-3 rounded-2xl border border-slate-800">
+          <div>
+            <span className="text-[10px] text-slate-400 block font-semibold">Active User Profile</span>
+            <span className="font-bold text-white truncate block">{settings.activeUser || 'Owner'}</span>
+          </div>
+          <div>
+            <span className="text-[10px] text-slate-400 block font-semibold">Store Sync Code</span>
+            <span className="font-mono font-bold text-amber-400 truncate block">{settings.storeSyncCode}</span>
+          </div>
+          <div>
+            <span className="text-[10px] text-slate-400 block font-semibold">Mobile Device ID</span>
+            <span className="font-mono text-[10px] text-emerald-400 truncate block">{settings.deviceId || 'mob_active'}</span>
+          </div>
+          <div>
+            <span className="text-[10px] text-slate-400 block font-semibold">Screen Spec</span>
+            <span className="text-[10px] text-slate-300 truncate block">{settings.deviceFingerprint || 'Mobile Viewport'}</span>
+          </div>
+        </div>
+
+        <button
+          onClick={logoutStore}
+          className="w-full py-2.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-300 font-extrabold text-xs cursor-pointer transition-all active:scale-98"
+        >
+          Switch Account / Logout Device
         </button>
       </div>
 

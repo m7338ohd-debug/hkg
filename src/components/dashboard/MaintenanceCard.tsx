@@ -15,7 +15,7 @@ import { formatCurrency, calculatePeriodSummary, filterTransactionsByDate, getTo
 import type { WithdrawalPerson } from '../../types';
 
 export const MaintenanceCard: React.FC = () => {
-  const { transactions, settings, addTransaction } = useCashFlow();
+  const { transactions, homeMaintenanceList, settings, addTransaction } = useCashFlow();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Form State
@@ -26,7 +26,13 @@ export const MaintenanceCard: React.FC = () => {
 
   const todayStr = getTodayDateString();
   const periodSummary = calculatePeriodSummary(transactions, settings);
-  const todaySpent = periodSummary.today.homeMaintenanceSpent;
+
+  // Calculate maintenance sum including homeMaintenanceList
+  const homeMaintenanceTotalToday = homeMaintenanceList
+    .filter((m) => m.date === todayStr)
+    .reduce((sum, item) => sum + item.amount, 0);
+
+  const todaySpent = periodSummary.today.homeMaintenanceSpent + homeMaintenanceTotalToday;
 
   // Calculate weekly & monthly maintenance spent
   const weeklyTxs = filterTransactionsByDate(transactions, 'this_week');
@@ -51,8 +57,9 @@ export const MaintenanceCard: React.FC = () => {
     return sum;
   };
 
-  const weeklySpent = calcMaintenanceSum(weeklyTxs);
-  const monthlySpent = calcMaintenanceSum(monthlyTxs);
+  const totalHomeMaintenanceAll = homeMaintenanceList.reduce((sum, item) => sum + item.amount, 0);
+  const weeklySpent = calcMaintenanceSum(weeklyTxs) + homeMaintenanceTotalToday;
+  const monthlySpent = calcMaintenanceSum(monthlyTxs) + totalHomeMaintenanceAll;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

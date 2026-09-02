@@ -5,9 +5,10 @@ import {
   CheckCircle2,
   TrendingUp,
   X,
-  HelpCircle,
-  Calendar,
-  Calculator,
+  PlusCircle,
+  RefreshCw,
+  Plus,
+  Sliders,
 } from 'lucide-react';
 import { useCashFlow } from '../../context/CashFlowContext';
 import { formatCurrency, calculatePeriodSummary, getTodayDateString } from '../../utils/calculations';
@@ -22,32 +23,61 @@ export const ProfitCard: React.FC = () => {
   const weekly = periodSummary.weekly;
   const monthly = periodSummary.monthly;
 
-  const [manualProfitInput, setManualProfitInput] = useState<string>(
+  // Add-on mode vs Override mode
+  const [profitMode, setProfitMode] = useState<'addon' | 'override'>('addon');
+  const [addonAmountInput, setAddonAmountInput] = useState<string>('100');
+  const [overrideAmountInput, setOverrideAmountInput] = useState<string>(
     today.isManualProfit ? today.profit.toString() : today.autoProfit.toString()
   );
   const [profitNotesInput, setProfitNotesInput] = useState<string>(today.manualProfitNotes || '');
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
 
+  const currentRecordedProfit = today.isManualProfit ? today.profit : today.autoProfit;
+
   const handleOpenEditModal = () => {
-    setManualProfitInput(today.isManualProfit ? today.profit.toString() : today.autoProfit.toString());
-    setProfitNotesInput(today.manualProfitNotes || '');
     setSelectedDate(todayStr);
+    setProfitMode(today.profit > 0 ? 'addon' : 'override');
+    setAddonAmountInput('');
+    setOverrideAmountInput(today.profit > 0 ? today.profit.toString() : today.autoProfit.toString());
+    setProfitNotesInput('');
     setIsEditModalOpen(true);
   };
 
   const handleSaveProfit = (e: React.FormEvent) => {
     e.preventDefault();
-    const numAmount = parseFloat(manualProfitInput);
-    if (!isNaN(numAmount) && numAmount >= 0) {
-      setManualDailyProfit(selectedDate, numAmount, profitNotesInput);
-      setIsEditModalOpen(false);
+
+    let finalTotal = 0;
+    let finalNote = profitNotesInput.trim();
+
+    if (profitMode === 'addon') {
+      const addedNum = parseFloat(addonAmountInput);
+      if (isNaN(addedNum) || addedNum < 0) return;
+
+      finalTotal = currentRecordedProfit + addedNum;
+      const noteAppend = `+${settings.currency}${addedNum}`;
+      finalNote = finalNote
+        ? `${finalNote} (${noteAppend})`
+        : `Prev ${settings.currency}${currentRecordedProfit} ${noteAppend} = Total ${settings.currency}${finalTotal}`;
+    } else {
+      const overrideNum = parseFloat(overrideAmountInput);
+      if (isNaN(overrideNum) || overrideNum < 0) return;
+
+      finalTotal = overrideNum;
+      if (!finalNote) {
+        finalNote = `Set Total ${settings.currency}${finalTotal}`;
+      }
     }
+
+    setManualDailyProfit(selectedDate, finalTotal, finalNote);
+    setIsEditModalOpen(false);
   };
 
   const handleResetToAuto = () => {
     setManualDailyProfit(selectedDate, undefined, undefined);
     setIsEditModalOpen(false);
   };
+
+  const calculatedAddonTotal = currentRecordedProfit + (parseFloat(addonAmountInput) || 0);
 
   return (
     <div className="bg-gradient-to-br from-emerald-950/90 via-slate-900 to-slate-900 text-white rounded-3xl p-5 shadow-xl border border-emerald-500/30 space-y-4 relative overflow-hidden">
@@ -72,15 +102,15 @@ export const ProfitCard: React.FC = () => {
                 </span>
               )}
             </h3>
-            <p className="text-[11px] text-slate-400">Manual daily profit entry + auto purchase/sales calculation</p>
+            <p className="text-[11px] text-slate-400">Add-on incremental profit entries + auto margin calculation</p>
           </div>
         </div>
 
         <button
           onClick={handleOpenEditModal}
-          className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold flex items-center gap-1.5 shadow-md transition-all cursor-pointer active:scale-95 shrink-0"
+          className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs font-extrabold flex items-center gap-1.5 shadow-md transition-all cursor-pointer active:scale-95 shrink-0"
         >
-          <Edit3 className="w-3.5 h-3.5" /> Set Profit
+          <PlusCircle className="w-3.5 h-3.5" /> Add Profit
         </button>
       </div>
 
@@ -90,17 +120,19 @@ export const ProfitCard: React.FC = () => {
         <div className="p-4 bg-slate-800/80 rounded-2xl border border-slate-700/80 space-y-1">
           <div className="flex justify-between items-center text-xs">
             <span className="text-slate-400 font-bold uppercase text-[10px]">Today's Profit Earned</span>
-            <span className="text-emerald-400 text-[10px] font-mono">
-              {today.isManualProfit ? 'Custom Entered' : 'Sales Margin'}
+            <span className="text-emerald-400 text-[10px] font-mono font-bold">
+              {today.isManualProfit ? 'Custom / Add-On' : 'Sales Margin'}
             </span>
           </div>
           <div className="text-3xl font-black text-emerald-400 font-mono tracking-tight">
             {formatCurrency(today.profit, settings.currency)}
           </div>
           {today.manualProfitNotes ? (
-            <p className="text-[11px] font-semibold text-amber-300 bg-amber-950/40 px-2 py-1 rounded-lg border border-amber-500/30 mt-1 inline-block">
-              Note: {today.manualProfitNotes}
-            </p>
+            <div className="pt-1">
+              <span className="text-[10px] font-bold text-amber-300 bg-amber-950/50 px-2 py-0.5 rounded-lg border border-amber-500/30 inline-block">
+                Breakdown: {today.manualProfitNotes}
+              </span>
+            </div>
           ) : (
             <p className="text-[10px] text-slate-400">
               {today.isManualProfit
@@ -126,7 +158,7 @@ export const ProfitCard: React.FC = () => {
         </div>
       </div>
 
-      {/* Edit Profit Modal */}
+      {/* Add-On Daily Profit Modal */}
       {isEditModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
           <div
@@ -134,14 +166,40 @@ export const ProfitCard: React.FC = () => {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-              <h4 className="font-extrabold text-sm flex items-center gap-2">
-                <Edit3 className="w-4 h-4 text-emerald-500" /> Manually Add Daily Profit
+              <h4 className="font-extrabold text-sm flex items-center gap-2 text-slate-900 dark:text-white">
+                <PlusCircle className="w-4 h-4 text-emerald-500" /> Daily Profit Entry
               </h4>
               <button
                 onClick={() => setIsEditModalOpen(false)}
                 className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
               >
                 <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Mode Switcher: Add-On vs Override */}
+            <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl gap-1">
+              <button
+                type="button"
+                onClick={() => setProfitMode('addon')}
+                className={`py-2 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                  profitMode === 'addon'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                }`}
+              >
+                <Plus className="w-3.5 h-3.5" /> Add-On Profit (+)
+              </button>
+              <button
+                type="button"
+                onClick={() => setProfitMode('override')}
+                className={`py-2 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                  profitMode === 'override'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                }`}
+              >
+                <Sliders className="w-3.5 h-3.5" /> Set Total (=)
               </button>
             </div>
 
@@ -156,33 +214,70 @@ export const ProfitCard: React.FC = () => {
                 />
               </div>
 
-              <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                  Actual Daily Profit Amount ({settings.currency})
-                </label>
-                <input
-                  type="number"
-                  step="any"
-                  required
-                  value={manualProfitInput}
-                  onChange={(e) => setManualProfitInput(e.target.value)}
-                  placeholder="e.g. 1200"
-                  className="w-full px-3.5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-lg font-black text-emerald-600 dark:text-emerald-400 focus:ring-2 focus:ring-emerald-500 font-mono"
-                />
-                <p className="text-[10px] text-slate-400 mt-1">
-                  Auto-calculated 2% profit for today is {formatCurrency(today.autoProfit, settings.currency)}.
-                </p>
-              </div>
+              {/* MODE 1: ADD-ON PROFIT */}
+              {profitMode === 'addon' && (
+                <div className="space-y-2.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 p-3.5 rounded-2xl">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-emerald-800 dark:text-emerald-300 font-bold">Currently Recorded Profit:</span>
+                    <span className="font-mono font-black text-emerald-700 dark:text-emerald-300 text-sm">
+                      {formatCurrency(currentRecordedProfit, settings.currency)}
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                      Add Additional Profit (+{settings.currency})
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      required
+                      value={addonAmountInput}
+                      onChange={(e) => setAddonAmountInput(e.target.value)}
+                      placeholder="e.g. 50 or 100"
+                      className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-700 rounded-xl text-lg font-black text-emerald-600 dark:text-emerald-400 focus:ring-2 focus:ring-emerald-500 font-mono"
+                    />
+                  </div>
+
+                  <div className="p-2 bg-emerald-100 dark:bg-emerald-900/60 rounded-xl text-xs font-bold text-emerald-900 dark:text-emerald-200 flex justify-between items-center">
+                    <span>New Total Profit Preview:</span>
+                    <span className="font-mono text-sm font-black text-emerald-700 dark:text-emerald-300">
+                      {formatCurrency(calculatedAddonTotal, settings.currency)}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* MODE 2: OVERRIDE TOTAL PROFIT */}
+              {profitMode === 'override' && (
+                <div>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    Set Exact Total Profit ({settings.currency})
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    required
+                    value={overrideAmountInput}
+                    onChange={(e) => setOverrideAmountInput(e.target.value)}
+                    placeholder="e.g. 1500"
+                    className="w-full px-3.5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-lg font-black text-emerald-600 dark:text-emerald-400 focus:ring-2 focus:ring-emerald-500 font-mono"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    Auto-calculated 2% profit is {formatCurrency(today.autoProfit, settings.currency)}.
+                  </p>
+                </div>
+              )}
 
               <div>
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                  Profit Description / Notes (Optional)
+                  Notes / Description (Optional)
                 </label>
                 <input
                   type="text"
                   value={profitNotesInput}
                   onChange={(e) => setProfitNotesInput(e.target.value)}
-                  placeholder="e.g. Special Sunday grocery peak profit, bulk rice margin"
+                  placeholder="e.g. Added evening grocery profit"
                   className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
@@ -190,9 +285,12 @@ export const ProfitCard: React.FC = () => {
               <div className="flex items-center gap-2 pt-1">
                 <button
                   type="submit"
-                  className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl shadow-md cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                  className="flex-1 py-3 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold text-xs rounded-xl shadow-md cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-1.5"
                 >
-                  <CheckCircle2 className="w-4 h-4" /> Save Profit
+                  <CheckCircle2 className="w-4 h-4" />
+                  {profitMode === 'addon'
+                    ? `ADD +${settings.currency}${addonAmountInput || 0} PROFIT`
+                    : 'SAVE TOTAL PROFIT'}
                 </button>
 
                 {today.isManualProfit && (

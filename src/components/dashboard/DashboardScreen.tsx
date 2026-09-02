@@ -41,7 +41,7 @@ interface DashboardScreenProps {
   onQuickFormLaunch?: (type: string) => void;
 }
 
-export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab }) => {
+export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab, onQuickFormLaunch }) => {
   const { transactions, settings, addTransaction } = useCashFlow();
   const [chartTimeframe, setChartTimeframe] = useState<'7days' | '14days' | '30days'>('7days');
   const [selectedChart, setSelectedChart] = useState<'cashflow' | 'profit' | 'expenses'>('cashflow');
@@ -83,40 +83,13 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab }
   const daysCount = chartTimeframe === '7days' ? 7 : chartTimeframe === '14days' ? 14 : 30;
   const chartData = getChartData(transactions, daysCount);
 
-  const handleOpenCollectModal = (cust: CustomerCreditSummary) => {
-    setCollectTarget(cust);
-    setCustomCollectAmount(cust.outstandingBalance.toString());
-    setPayMethod('Cash');
-  };
-
   const scrollToUdharList = () => {
     if (udharSectionRef.current) {
       udharSectionRef.current.scrollIntoView({ behavior: 'smooth' });
     } else {
-      setActiveTab('transactions');
+      if (onQuickFormLaunch) onQuickFormLaunch('credit_payment');
+      else setActiveTab('transactions');
     }
-  };
-
-  const handleConfirmCollect = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!collectTarget) return;
-
-    const numAmount = parseFloat(customCollectAmount);
-    if (isNaN(numAmount) || numAmount <= 0) {
-      return;
-    }
-
-    addTransaction({
-      type: 'credit_payment',
-      amount: numAmount,
-      customerName: collectTarget.customerName,
-      phone: collectTarget.phone,
-      paymentMethod: payMethod,
-      date: getTodayDateString(),
-      notes: `Cleared Udhar balance (${payMethod})`,
-    });
-
-    setCollectTarget(null);
   };
 
   return (
@@ -137,14 +110,14 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab }
         </button>
 
         <button
-          onClick={() => setActiveTab('transactions')}
+          onClick={() => (onQuickFormLaunch ? onQuickFormLaunch('credit_sale') : setActiveTab('transactions'))}
           className="p-3 bg-gradient-to-br from-purple-600 to-indigo-600 text-white rounded-2xl shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center gap-3 group active:scale-[0.98]"
         >
           <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-xs group-hover:scale-110 transition-transform">
             <CreditCard className="w-5 h-5 text-white" />
           </div>
           <div className="text-left">
-            <h4 className="font-extrabold text-xs">Give Udhar</h4>
+            <h4 className="font-extrabold text-xs">Gave Udhar</h4>
             <p className="text-[10px] text-purple-100">+ New Credit Sale</p>
           </div>
         </button>
@@ -163,14 +136,14 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab }
         </button>
 
         <button
-          onClick={() => setActiveTab('transactions')}
+          onClick={() => (onQuickFormLaunch ? onQuickFormLaunch('purchase') : setActiveTab('transactions'))}
           className="p-3 bg-gradient-to-br from-rose-500 to-orange-500 text-white rounded-2xl shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center gap-3 group active:scale-[0.98]"
         >
           <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-xs group-hover:scale-110 transition-transform">
             <ShoppingCart className="w-5 h-5 text-white" />
           </div>
           <div className="text-left">
-            <h4 className="font-extrabold text-xs">Purchases</h4>
+            <h4 className="font-extrabold text-xs">Store Purchase</h4>
             <p className="text-[10px] text-rose-100">Store Expenses</p>
           </div>
         </button>
@@ -398,19 +371,28 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab }
           </div>
 
           <div className="space-y-2">
-            <div className="flex justify-between items-center text-xs">
+            <div
+              onClick={() => setActiveTab('history')}
+              className="flex justify-between items-center text-xs p-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors"
+            >
               <span className="text-slate-600 dark:text-slate-400">Today Cash Sales</span>
               <span className="font-extrabold text-slate-900 dark:text-white">
                 {formatCurrency(today.cashSales, settings.currency)}
               </span>
             </div>
-            <div className="flex justify-between items-center text-xs">
+            <div
+              onClick={() => (onQuickFormLaunch ? onQuickFormLaunch('credit_sale') : setActiveTab('transactions'))}
+              className="flex justify-between items-center text-xs p-1.5 rounded-xl hover:bg-purple-50 dark:hover:bg-purple-950/40 cursor-pointer transition-colors"
+            >
               <span className="text-slate-600 dark:text-slate-400">Today Credit Sales (Udhar)</span>
               <span className="font-extrabold text-purple-600 dark:text-purple-400">
                 {formatCurrency(today.creditSales, settings.currency)}
               </span>
             </div>
-            <div className="flex justify-between items-center text-xs">
+            <div
+              onClick={() => (onQuickFormLaunch ? onQuickFormLaunch('credit_payment') : setActiveTab('transactions'))}
+              className="flex justify-between items-center text-xs p-1.5 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-950/40 cursor-pointer transition-colors"
+            >
               <span className="text-slate-600 dark:text-slate-400">Today Credit Received</span>
               <span className="font-extrabold text-emerald-600 dark:text-emerald-400">
                 {formatCurrency(today.creditReceived, settings.currency)}
@@ -432,19 +414,28 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab }
           </div>
 
           <div className="space-y-2">
-            <div className="flex justify-between items-center text-xs">
+            <div
+              onClick={() => (onQuickFormLaunch ? onQuickFormLaunch('purchase') : setActiveTab('transactions'))}
+              className="flex justify-between items-center text-xs p-1.5 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/40 cursor-pointer transition-colors"
+            >
               <span className="text-slate-600 dark:text-slate-400">Today Purchases</span>
               <span className="font-extrabold text-slate-900 dark:text-white">
                 {formatCurrency(today.purchases, settings.currency)}
               </span>
             </div>
-            <div className="flex justify-between items-center text-xs">
+            <div
+              onClick={() => (onQuickFormLaunch ? onQuickFormLaunch('expense') : setActiveTab('transactions'))}
+              className="flex justify-between items-center text-xs p-1.5 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer transition-colors"
+            >
               <span className="text-slate-600 dark:text-slate-400">Today Store Expenses</span>
               <span className="font-extrabold text-rose-600 dark:text-rose-400">
                 {formatCurrency(today.expenses, settings.currency)}
               </span>
             </div>
-            <div className="flex justify-between items-center text-xs">
+            <div
+              onClick={() => (onQuickFormLaunch ? onQuickFormLaunch('withdrawal') : setActiveTab('transactions'))}
+              className="flex justify-between items-center text-xs p-1.5 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-950/40 cursor-pointer transition-colors"
+            >
               <span className="text-slate-600 dark:text-slate-400">Today Withdrawals</span>
               <span className="font-extrabold text-amber-600 dark:text-amber-400">
                 {formatCurrency(today.withdrawals, settings.currency)}

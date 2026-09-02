@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CashFlowProvider } from './context/CashFlowContext';
+import { CashFlowProvider, useCashFlow } from './context/CashFlowContext';
 import { Header } from './components/common/Header';
 import { BottomNav, type ActiveTab } from './components/common/BottomNav';
 import { Toast } from './components/common/Toast';
@@ -9,12 +9,16 @@ import { TransactionFormScreen } from './components/transactions/TransactionForm
 import { HistoryScreen } from './components/history/HistoryScreen';
 import { ReportsScreen } from './components/reports/ReportsScreen';
 import { SettingsScreen } from './components/settings/SettingsScreen';
+import { HomeFamilyScreen } from './components/home/HomeFamilyScreen';
 import { DownloadAppModal } from './components/common/DownloadAppModal';
 import { InstallBanner } from './components/common/InstallBanner';
 import { StoreLoginModal } from './components/common/StoreLoginModal';
+import { AuthScreen } from './components/auth/AuthScreen';
 
 const MainApp: React.FC = () => {
+  const { settings } = useCashFlow();
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
+  const [txFormType, setTxFormType] = useState<any>('credit_sale');
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
@@ -24,8 +28,23 @@ const MainApp: React.FC = () => {
   const handleOpenLoginModal = () => setIsLoginModalOpen(true);
   const handleCloseLoginModal = () => setIsLoginModalOpen(false);
 
+  const handleLaunchTxForm = (type: string) => {
+    setTxFormType(type);
+    setActiveTab('transactions');
+  };
+
+  // Device Auth Guard: Show 3D Auth Screen if not logged in on this mobile device
+  if (!settings.isLoggedIn) {
+    return (
+      <>
+        <Toast />
+        <AuthScreen />
+      </>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200">
+    <div className="h-dvh min-h-dvh max-h-dvh w-full overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col justify-between transition-colors duration-200">
       {/* Top Header */}
       <Header
         onOpenDownloadApp={handleOpenDownloadApp}
@@ -35,13 +54,21 @@ const MainApp: React.FC = () => {
       {/* Global Real-time Toast Notifications */}
       <Toast />
 
-      {/* Main Tab Screen Content */}
-      <main className="animate-in fade-in duration-200">
-        {activeTab === 'dashboard' && <DashboardScreen setActiveTab={setActiveTab} />}
+      {/* Main Tab Screen Content (Scrollable inner container, sticky top/bottom) */}
+      <main className="flex-1 overflow-y-auto animate-in fade-in duration-200 safe-bottom-padding">
+        {activeTab === 'dashboard' && (
+          <DashboardScreen
+            setActiveTab={setActiveTab}
+            onQuickFormLaunch={handleLaunchTxForm}
+          />
+        )}
         {activeTab === 'calculator' && <CalculatorScreen />}
-        {activeTab === 'transactions' && <TransactionFormScreen />}
+        {activeTab === 'transactions' && (
+          <TransactionFormScreen key={txFormType} initialType={txFormType} />
+        )}
         {activeTab === 'history' && <HistoryScreen />}
         {activeTab === 'reports' && <ReportsScreen />}
+        {activeTab === 'home_family' && <HomeFamilyScreen />}
         {activeTab === 'settings' && <SettingsScreen onOpenDownloadApp={handleOpenDownloadApp} />}
       </main>
 

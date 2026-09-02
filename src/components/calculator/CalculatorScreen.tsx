@@ -101,6 +101,8 @@ export const CalculatorScreen: React.FC = () => {
     setIsCalculated(false);
   };
 
+  const [posPayMethod, setPosPayMethod] = useState<'Cash' | 'UPI'>('Cash');
+
   const handleSaveCashSale = () => {
     const finalAmount = isCalculated ? parseFloat(expression) : calculateResult(expression);
     if (finalAmount <= 0) return;
@@ -109,7 +111,8 @@ export const CalculatorScreen: React.FC = () => {
       type: 'cash_sale',
       amount: finalAmount,
       date: getTodayDateString(),
-      notes: notes.trim() || `POS Cash Sale (${expression || finalAmount})`,
+      paymentMethod: posPayMethod,
+      notes: notes.trim() || `POS ${posPayMethod} Sale (${expression || finalAmount})`,
     });
 
     setExpression('');
@@ -340,18 +343,46 @@ export const CalculatorScreen: React.FC = () => {
 
       {/* Triple Action Buttons: Save Cash Sale, Save Udhar, Save Home Use */}
       <div className="space-y-2 pt-1">
+        {/* Payment Method Selector */}
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setPosPayMethod('Cash')}
+            className={`flex-1 py-1.5 rounded-xl text-xs font-extrabold border transition-all cursor-pointer ${
+              posPayMethod === 'Cash'
+                ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+            }`}
+          >
+            💵 Cash Sale
+          </button>
+          <button
+            type="button"
+            onClick={() => setPosPayMethod('UPI')}
+            className={`flex-1 py-1.5 rounded-xl text-xs font-extrabold border transition-all cursor-pointer ${
+              posPayMethod === 'UPI'
+                ? 'bg-cyan-600 text-white border-cyan-600 shadow-xs'
+                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+            }`}
+          >
+            📱 Online / UPI Sale
+          </button>
+        </div>
+
         {/* Main Save Cash Sale */}
         <button
           onClick={handleSaveCashSale}
           disabled={currentTotal <= 0}
           className={`w-full py-3.5 rounded-2xl font-black text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer ${
             currentTotal > 0
-              ? 'bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-emerald-500/25 active:scale-[0.98]'
+              ? posPayMethod === 'UPI'
+                ? 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-cyan-500/25 active:scale-[0.98]'
+                : 'bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-emerald-500/25 active:scale-[0.98]'
               : 'bg-slate-300 dark:bg-slate-800 text-slate-500 cursor-not-allowed'
           }`}
         >
           <CheckCircle className="w-5 h-5" />
-          SAVE CASH SALE ({formatCurrency(currentTotal, settings.currency)})
+          SAVE {posPayMethod === 'UPI' ? 'ONLINE / UPI' : 'CASH'} SALE ({formatCurrency(currentTotal, settings.currency)})
         </button>
 
         <div className="grid grid-cols-2 gap-2">

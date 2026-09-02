@@ -47,6 +47,12 @@ export interface StoreSettings {
   manualDailyProfits?: Record<string, number | { amount: number; notes?: string }>; // Record of YYYY-MM-DD -> profit amount or object
   activeUser?: string; // e.g. 'Owner / Ayesha', 'Mom / Mother', 'Employee'
   isLoggedIn?: boolean; // Whether phone is logged into a store code
+  deviceId?: string; // Unique persistent mobile identity token
+  deviceFingerprint?: string; // User agent / screen resolution description
+  lastLoginTimestamp?: number; // Unix timestamp of last authentication
+  createdAccountDate?: string; // YYYY-MM-DD
+  mobileNumber?: string; // e.g. '+91 98765 43210'
+  isPhoneVerified?: boolean; // Whether phone OTP was verified
 }
 
 export interface CustomerCreditSummary {
@@ -79,6 +85,26 @@ export interface DailySummary {
   investorProfit: number;
   outstandingCredit: number;
   homeMaintenanceSpent: number; // Total spent on Home Maintenance & Personal drawings
+}
+
+export interface HomeMaintenanceEntry {
+  id: string;
+  date: string; // YYYY-MM-DD
+  category: 'Groceries & Milk' | 'Repairs & Fixes' | 'Utility Bills' | 'Medical & Health' | 'General House' | 'Other';
+  amount: number;
+  notes?: string;
+  addedBy?: string;
+  createdAt: number;
+}
+
+export interface FamilyIncomeEntry {
+  id: string;
+  date: string; // YYYY-MM-DD
+  memberName: 'Father' | 'Mother' | 'Brother' | 'Sister' | 'Self / Owner' | 'Other Member';
+  incomeSource: 'Salary / Job' | 'Pension' | 'Business' | 'House Rent' | 'Extra Earnings' | 'Other';
+  amount: number;
+  notes?: string;
+  createdAt: number;
 }
 
 export interface DateFilterOption {
