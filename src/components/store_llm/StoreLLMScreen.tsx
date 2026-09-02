@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Bot,
   Sparkles,
@@ -22,6 +22,7 @@ import {
   Table as TableIcon,
   ChevronDown,
   ChevronUp,
+  Trash2,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -60,11 +61,19 @@ export const StoreLLMScreen: React.FC<StoreLLMScreenProps> = ({ setActiveTab }) 
   const todaySummary = calculateSummary(transactions, settings);
 
   // Core Inputs
-  const [cashSales, setCashSales] = useState<number>(todaySummary.cashSales || 15000);
+  const [cashSales, setCashSales] = useState<number>(todaySummary.cashSales);
   const [manualPurchaseProfit, setManualPurchaseProfit] = useState<number>(
-    todaySummary.manualProfit !== undefined ? todaySummary.manualProfit : 500
+    todaySummary.manualProfit !== undefined ? todaySummary.manualProfit : 0
   );
   const [purchaseNotes, setPurchaseNotes] = useState<string>(todaySummary.manualProfitNotes || 'Wholesale discount difference');
+
+  useEffect(() => {
+    setCashSales(todaySummary.cashSales);
+    setManualPurchaseProfit(todaySummary.manualProfit !== undefined ? todaySummary.manualProfit : 0);
+    if (todaySummary.manualProfitNotes) {
+      setPurchaseNotes(todaySummary.manualProfitNotes);
+    }
+  }, [todaySummary.cashSales, todaySummary.manualProfit, todaySummary.manualProfitNotes]);
 
   // Table Expand / Collapse state (Default 5 rows)
   const [isTableExpanded, setIsTableExpanded] = useState<boolean>(false);
@@ -91,23 +100,24 @@ export const StoreLLMScreen: React.FC<StoreLLMScreenProps> = ({ setActiveTab }) 
       const dateStr = d.toISOString().split('T')[0];
       const dayLabel = d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric' });
 
-      // Daily cash sales from ledger or fallback calculation
+      // Daily cash sales from ledger
       const dayTxs = transactions.filter((t) => t.date === dateStr && t.type === 'cash_sale');
       const dayCashSales = dayTxs.reduce((sum, t) => sum + t.amount, 0);
 
-      const finalSales = i === 0 ? cashSales : (dayCashSales || Math.round(cashSales * (0.85 + (i % 3) * 0.1)));
+      const finalSales = i === 0 ? cashSales : dayCashSales;
       const cProfit = (finalSales * (settings.profitRate || 2)) / 100;
 
       const rawVal = settings.manualDailyProfits ? settings.manualDailyProfits[dateStr] : undefined;
-      let pProfit = manualPurchaseProfit;
-      if (i !== 0 && rawVal !== undefined) {
+      let pProfit = 0;
+      if (i === 0) {
+        pProfit = manualPurchaseProfit;
+      } else if (rawVal !== undefined) {
         if (typeof rawVal === 'number') pProfit = rawVal;
         else if (typeof rawVal === 'object' && rawVal !== null) pProfit = rawVal.amount;
-      } else if (i !== 0) {
-        pProfit = Math.round(manualPurchaseProfit * (0.8 + (i % 2) * 0.3));
       }
 
-      const avgProfit = (cProfit + pProfit) / 2;
+      // User Rule: Divide by 2 ONLY when purchase profit > 0 is added! Else 100% of 2% sales profit!
+      const avgProfit = pProfit > 0 ? (cProfit + pProfit) / 2 : cProfit;
 
       result.push({
         date: dateStr,
@@ -138,19 +148,23 @@ export const StoreLLMScreen: React.FC<StoreLLMScreenProps> = ({ setActiveTab }) 
       const dayTxs = transactions.filter((t) => t.date === dateStr && t.type === 'cash_sale');
       const dayCashSales = dayTxs.reduce((sum, t) => sum + t.amount, 0);
 
-      const finalSales = i === 0 ? cashSales : (dayCashSales || Math.round(cashSales * (0.85 + (i % 4) * 0.08)));
+      const finalSales = i === 0 ? cashSales : dayCashSales;
       const cProfit = (finalSales * (settings.profitRate || 2)) / 100;
 
       const rawVal = settings.manualDailyProfits ? settings.manualDailyProfits[dateStr] : undefined;
-      let pProfit = manualPurchaseProfit;
-      if (i !== 0 && rawVal !== undefined) {
+      let pProfit = 0;
+      let hasManualOverride = false;
+      if (i === 0) {
+        pProfit = manualPurchaseProfit;
+        if (todaySummary.manualProfit !== undefined) hasManualOverride = true;
+      } else if (rawVal !== undefined) {
+        hasManualOverride = true;
         if (typeof rawVal === 'number') pProfit = rawVal;
         else if (typeof rawVal === 'object' && rawVal !== null) pProfit = rawVal.amount;
-      } else if (i !== 0) {
-        pProfit = Math.round(manualPurchaseProfit * (0.8 + (i % 3) * 0.2));
       }
 
-      const avgProfit = (cProfit + pProfit) / 2;
+      // User Rule: Divide by 2 ONLY when purchase profit > 0 is added! Else 100% of 2% sales profit!
+      const avgProfit = pProfit > 0 ? (cProfit + pProfit) / 2 : cProfit;
 
       result.push({
         date: dateStr,
@@ -160,11 +174,12 @@ export const StoreLLMScreen: React.FC<StoreLLMScreenProps> = ({ setActiveTab }) 
         cash2Percent: Math.round(cProfit),
         purchased: Math.round(pProfit),
         average: Math.round(avgProfit),
+        hasManualOverride,
       });
     }
 
     return result;
-  }, [transactions, settings, cashSales, manualPurchaseProfit]);
+  }, [transactions, settings, cashSales, manualPurchaseProfit, todaySummary.manualProfit]);
 
   // 3. Total Month Profit Calculations across all 3 profit types
   const monthlyTotals = useMemo(() => {
@@ -285,7 +300,7 @@ Your small month profit cards, 3D floating cubes, and expandable history table a
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-3.5 sm:p-4 pb-28 space-y-5 sm:space-y-7 animate-in fade-in duration-200">
+    <div className="w-full max-w-7xl mx-auto p-3 sm:p-6 pb-28 space-y-5 sm:space-y-7 overflow-x-hidden animate-in fade-in duration-200">
       {/* Screen Header Banner */}
       <div className="bg-gradient-to-r from-slate-900 via-emerald-950 to-teal-950 rounded-3xl p-4 sm:p-6 text-white shadow-xl border border-emerald-500/20 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -556,12 +571,28 @@ Your small month profit cards, 3D floating cubes, and expandable history table a
           </span>
         </div>
 
-        <div className="h-64 w-full pt-2">
+        {/* Graph Legend Badges */}
+        <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
+          <span className="flex items-center gap-1 text-[10px] font-extrabold px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+            1: 2% Sales Profit
+          </span>
+          <span className="flex items-center gap-1 text-[10px] font-extrabold px-2 py-1 rounded-lg bg-purple-50 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 border border-purple-500/20">
+            <span className="w-2 h-2 rounded-full bg-purple-500 shrink-0" />
+            2: Purchased Profit
+          </span>
+          <span className="flex items-center gap-1 text-[10px] font-extrabold px-2 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 border border-blue-500/20">
+            <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+            3: Net Day Earning
+          </span>
+        </div>
+
+        <div className="h-56 w-full pt-1">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={dailyHistoryGraphData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+            <BarChart data={dailyHistoryGraphData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" opacity={0.15} />
-              <XAxis dataKey="day" tick={{ fontSize: 11, fontWeight: 700 }} stroke="#64748b" />
-              <YAxis tick={{ fontSize: 10 }} stroke="#64748b" tickFormatter={(v) => `₹${v}`} />
+              <XAxis dataKey="day" tick={{ fontSize: 10, fontWeight: 700 }} stroke="#64748b" />
+              <YAxis tick={{ fontSize: 9 }} stroke="#64748b" tickFormatter={(v) => `₹${v}`} />
               <Tooltip
                 formatter={(value: any, name: string) => [
                   `₹${value}`,
@@ -569,7 +600,7 @@ Your small month profit cards, 3D floating cubes, and expandable history table a
                     ? 'Type: 2% Cash Sales Profit'
                     : name === 'purchasedProfit'
                     ? 'Type: Purchased Profit'
-                    : 'Type: Average One Day Earning',
+                    : 'Type: Net Day Earning',
                 ]}
                 labelFormatter={(label) => `Day: ${label}`}
                 contentStyle={{
@@ -577,26 +608,13 @@ Your small month profit cards, 3D floating cubes, and expandable history table a
                   borderColor: '#334155',
                   borderRadius: '12px',
                   color: '#fff',
-                  fontSize: '12px',
+                  fontSize: '11px',
                   fontWeight: 'bold',
                 }}
               />
-              <Legend
-                verticalAlign="top"
-                height={36}
-                formatter={(value) => (
-                  <span className="text-xs font-extrabold text-slate-700 dark:text-slate-300">
-                    {value === 'cashSalesProfit'
-                      ? 'Type 1: 2% Cash Sales Profit'
-                      : value === 'purchasedProfit'
-                      ? 'Type 2: Purchased Profit'
-                      : 'Type 3: Average (One Day Earning)'}
-                  </span>
-                )}
-              />
-              <Bar dataKey="cashSalesProfit" fill="#10b981" radius={[6, 6, 0, 0]} barSize={16} />
-              <Bar dataKey="purchasedProfit" fill="#a855f7" radius={[6, 6, 0, 0]} barSize={16} />
-              <Bar dataKey="averageProfit" fill="#3b82f6" radius={[6, 6, 0, 0]} barSize={16} />
+              <Bar dataKey="cashSalesProfit" fill="#10b981" radius={[4, 4, 0, 0]} barSize={14} />
+              <Bar dataKey="purchasedProfit" fill="#a855f7" radius={[4, 4, 0, 0]} barSize={14} />
+              <Bar dataKey="averageProfit" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={14} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -630,6 +648,7 @@ Your small month profit cards, 3D floating cubes, and expandable history table a
                 <th className="py-3 px-4 text-emerald-600 dark:text-emerald-400">2% Cash Sales Profit</th>
                 <th className="py-3 px-4 text-purple-600 dark:text-purple-400">Purchased Profit</th>
                 <th className="py-3 px-4 text-blue-600 dark:text-blue-400 font-extrabold">Average (One Day Earning)</th>
+                <th className="py-3 px-4 text-center text-slate-400">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs sm:text-sm font-bold">
@@ -658,6 +677,19 @@ Your small month profit cards, 3D floating cubes, and expandable history table a
                   </td>
                   <td className="py-3.5 px-4 text-blue-600 dark:text-blue-400 font-black font-mono bg-blue-50/40 dark:bg-blue-950/20">
                     {formatCurrency(row.average)}
+                  </td>
+                  <td className="py-3.5 px-4 text-center">
+                    {row.hasManualOverride ? (
+                      <button
+                        onClick={() => setManualDailyProfit(row.date, undefined)}
+                        className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/50 text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-900 transition-colors cursor-pointer"
+                        title="Reset manual profit for this date"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    ) : (
+                      <span className="text-[10px] text-slate-400 font-normal">Auto</span>
+                    )}
                   </td>
                 </tr>
               ))}

@@ -17,6 +17,8 @@ import {
   subscribeLocalSync,
   subscribeCloudSSE,
   mergeTransactions,
+  mergeHomeMaintenance,
+  mergeFamilyIncome,
 } from '../db/cloudSync';
 
 interface ToastMessage {
@@ -373,9 +375,16 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const resetPeriodData = (period: 'weekly' | 'monthly' | 'all') => {
-    let filtered = [...transactions];
+    let filteredTxs = [...transactions];
+    let filteredHomeMaint = [...homeMaintenanceList];
+    let filteredFamilyIncome = [...familyIncomeList];
+    let updatedProfits = { ...(settings.manualDailyProfits || {}) };
+
     if (period === 'all') {
-      filtered = [];
+      filteredTxs = [];
+      filteredHomeMaint = [];
+      filteredFamilyIncome = [];
+      updatedProfits = {};
     } else {
       const todayObj = new Date();
       if (period === 'weekly') {
@@ -385,22 +394,61 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         firstDay.setDate(diff);
         firstDay.setHours(0, 0, 0, 0);
 
-        filtered = transactions.filter((t) => new Date(t.date) < firstDay);
+        filteredTxs = transactions.filter((t) => new Date(t.date) < firstDay);
+        filteredHomeMaint = homeMaintenanceList.filter((m) => new Date(m.date) < firstDay);
+        filteredFamilyIncome = familyIncomeList.filter((f) => new Date(f.date) < firstDay);
+
+        Object.keys(updatedProfits).forEach((dateKey) => {
+          const d = new Date(dateKey);
+          if (d >= firstDay) {
+            delete updatedProfits[dateKey];
+          }
+        });
       } else if (period === 'monthly') {
         const currentMonth = todayObj.getMonth();
         const currentYear = todayObj.getFullYear();
 
-        filtered = transactions.filter((t) => {
+        filteredTxs = transactions.filter((t) => {
           const d = new Date(t.date);
           return !(d.getMonth() === currentMonth && d.getFullYear() === currentYear);
+        });
+
+        filteredHomeMaint = homeMaintenanceList.filter((m) => {
+          const d = new Date(m.date);
+          return !(d.getMonth() === currentMonth && d.getFullYear() === currentYear);
+        });
+
+        filteredFamilyIncome = familyIncomeList.filter((f) => {
+          const d = new Date(f.date);
+          return !(d.getMonth() === currentMonth && d.getFullYear() === currentYear);
+        });
+
+        Object.keys(updatedProfits).forEach((dateKey) => {
+          const d = new Date(dateKey);
+          if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
+            delete updatedProfits[dateKey];
+          }
         });
       }
     }
 
-    setTransactionsState(filtered);
-    saveTransactions(filtered);
-    pushToCloudSync(settings.storeSyncCode || 'AYESHA-STORE-01', settings, filtered);
-    showToast(`Reset ${period === 'weekly' ? 'Weekly' : 'Monthly'} Data`, 'Target entries cleared');
+    setTransactionsState(filteredTxs);
+    saveTransactions(filteredTxs);
+
+    setHomeMaintenanceList(filteredHomeMaint);
+    saveHomeMaintenance(filteredHomeMaint);
+
+    setFamilyIncomeList(filteredFamilyIncome);
+    saveFamilyIncome(filteredFamilyIncome);
+
+    const mergedSettings = { ...settings, manualDailyProfits: updatedProfits };
+    setSettingsState(mergedSettings);
+    saveSettings(mergedSettings);
+
+    pushToCloudSync(mergedSettings.storeSyncCode || 'AYESHA-STORE-01', mergedSettings, filteredTxs);
+    
+    const label = period === 'all' ? 'All Data' : period === 'weekly' ? 'Weekly Data' : 'Monthly Data';
+    showToast(`Reset ${label}`, 'Store transactions and home records cleared successfully');
   };
 
   const importBackup = (jsonStr: string) => {
@@ -445,6 +493,8 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       const remote = await pullFromCloudSync(cleanCode);
       let mergedT = [...transactions];
+      let mergedH = [...homeMaintenanceList];
+      let mergedF = [...familyIncomeList];
       let mergedS = {
         ...settings,
         storeSyncCode: cleanCode,
@@ -453,8 +503,16 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         lastLoginTimestamp: Date.now(),
       };
 
-      if (remote && Array.isArray(remote.transactions)) {
-        mergedT = mergeTransactions(transactions, remote.transactions);
+      if (remote) {
+        if (Array.isArray(remote.transactions)) {
+          mergedT = mergeTransactions(transactions, remote.transactions);
+        }
+        if (Array.isArray(remote.homeMaintenance)) {
+          mergedH = mergeHomeMaintenance(homeMaintenanceList, remote.homeMaintenance);
+        }
+        if (Array.isArray(remote.familyIncome)) {
+          mergedF = mergeFamilyIncome(familyIncomeList, remote.familyIncome);
+        }
         if (remote.settings) {
           mergedS = {
             ...remote.settings,
@@ -469,14 +527,21 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       setTransactionsState(mergedT);
       saveTransactions(mergedT);
+
+      setHomeMaintenanceList(mergedH);
+      saveHomeMaintenance(mergedH);
+
+      setFamilyIncomeList(mergedF);
+      saveFamilyIncome(mergedF);
+
       setSettingsState(mergedS);
       saveSettings(mergedS);
 
-      await pushToCloudSync(cleanCode, mergedS, mergedT);
-      showToast('Store Logged In & Synced!', `Connected as ${userName} (Code: ${cleanCode})`);
+      await pushToCloudSync(cleanCode, mergedS, mergedT, mergedH, mergedF);
+      showToast('Store Devices Connected!', `Mirroring live data as ${userName} (Code: ${cleanCode})`);
       return true;
     } catch (err) {
-      showToast('Login Warning', 'Using offline cached data. Will sync when reconnected.', 'info');
+      showToast('Connection Warning', 'Using offline cached data. Will sync when reconnected.', 'info');
       return true;
     } finally {
       setIsSyncing(false);

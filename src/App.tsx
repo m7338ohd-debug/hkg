@@ -45,7 +45,7 @@ const MainApp: React.FC = () => {
   }
 
   return (
-    <div className="h-dvh min-h-dvh max-h-dvh w-full overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col justify-between transition-colors duration-200">
+    <div className="min-h-dvh w-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col justify-between transition-colors duration-200 selection:bg-emerald-500 selection:text-white relative overflow-x-hidden">
       {/* Top Header - Store Icon click opens Settings */}
       <Header
         onOpenDownloadApp={handleOpenDownloadApp}
@@ -56,8 +56,8 @@ const MainApp: React.FC = () => {
       {/* Global Real-time Toast Notifications */}
       <Toast />
 
-      {/* Main Tab Screen Content (Scrollable inner container, sticky top/bottom) */}
-      <main className="flex-1 overflow-y-auto animate-in fade-in duration-200 safe-bottom-padding">
+      {/* Main Tab Screen Content */}
+      <main className="flex-1 w-full animate-in fade-in duration-200">
         {activeTab === 'dashboard' && (
           <DashboardScreen
             setActiveTab={setActiveTab}

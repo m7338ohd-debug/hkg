@@ -11,7 +11,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { useCashFlow } from '../../context/CashFlowContext';
-import { formatCurrency, calculatePeriodSummary, filterTransactionsByDate, getTodayDateString } from '../../utils/calculations';
+import { formatCurrency, calculatePeriodSummary, filterTransactionsByDate, filterHomeMaintenanceByDate, getTodayDateString } from '../../utils/calculations';
 import type { WithdrawalPerson } from '../../types';
 
 export const MaintenanceCard: React.FC = () => {
@@ -38,6 +38,9 @@ export const MaintenanceCard: React.FC = () => {
   const weeklyTxs = filterTransactionsByDate(transactions, 'this_week');
   const monthlyTxs = filterTransactionsByDate(transactions, 'this_month');
 
+  const weeklyHomeMaintenance = filterHomeMaintenanceByDate(homeMaintenanceList, 'this_week');
+  const monthlyHomeMaintenance = filterHomeMaintenanceByDate(homeMaintenanceList, 'this_month');
+
   const calcMaintenanceSum = (txList: typeof transactions) => {
     let sum = 0;
     txList.forEach((t) => {
@@ -57,9 +60,11 @@ export const MaintenanceCard: React.FC = () => {
     return sum;
   };
 
-  const totalHomeMaintenanceAll = homeMaintenanceList.reduce((sum, item) => sum + item.amount, 0);
-  const weeklySpent = calcMaintenanceSum(weeklyTxs) + homeMaintenanceTotalToday;
-  const monthlySpent = calcMaintenanceSum(monthlyTxs) + totalHomeMaintenanceAll;
+  const weeklyHomeMaintTotal = weeklyHomeMaintenance.reduce((sum, item) => sum + item.amount, 0);
+  const monthlyHomeMaintTotal = monthlyHomeMaintenance.reduce((sum, item) => sum + item.amount, 0);
+
+  const weeklySpent = calcMaintenanceSum(weeklyTxs) + weeklyHomeMaintTotal;
+  const monthlySpent = calcMaintenanceSum(monthlyTxs) + monthlyHomeMaintTotal;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

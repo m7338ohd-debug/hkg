@@ -91,83 +91,88 @@ export const HomeFamilyScreen: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-3.5 sm:p-5 pb-28 space-y-4">
+    <div className="w-full max-w-7xl mx-auto p-3 sm:p-6 pb-28 space-y-5 overflow-x-hidden">
       {/* Top Header & Overview Banner */}
       <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white rounded-3xl p-5 shadow-2xl border border-indigo-500/30 space-y-3 relative overflow-hidden">
         <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 w-40 h-40 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
 
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-indigo-500/20">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-indigo-500/20 text-indigo-300 rounded-2xl border border-indigo-500/40">
-              <Home className="w-6 h-6" />
+        <div className="flex flex-col gap-2.5 pb-3 border-b border-indigo-500/20">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="p-2.5 bg-indigo-500/20 text-indigo-300 rounded-2xl border border-indigo-500/40 shrink-0">
+              <Home className="w-5 h-5" />
             </div>
-            <div>
-              <h2 className="font-extrabold text-base text-white">Home Maintenance & Family Earnings</h2>
-              <p className="text-xs text-indigo-200">Track daily household usage & family member contributions</p>
+            <div className="min-w-0">
+              <h2 className="font-extrabold text-sm sm:text-base text-white truncate">Home Maintenance & Family Earnings</h2>
+              <p className="text-[11px] text-indigo-200 truncate">Track daily household usage & family member contributions</p>
             </div>
           </div>
 
-          <div className="flex gap-2">
+          {/* Action Buttons Grid (2-Column Mobile Layout) */}
+          <div className="grid grid-cols-2 gap-2 w-full pt-1">
             <button
               onClick={() => setIsMaintenanceModalOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold text-xs shadow-md cursor-pointer active:scale-95 transition-all flex items-center gap-1.5"
+              className="py-2.5 px-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold text-xs shadow-md cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-1 min-w-0"
             >
-              <PlusCircle className="w-4 h-4" /> + Maintenance
+              <PlusCircle className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">+ Maintenance</span>
             </button>
             <button
               onClick={() => setIsIncomeModalOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-500 hover:from-purple-500 hover:to-indigo-400 text-white font-extrabold text-xs shadow-md cursor-pointer active:scale-95 transition-all flex items-center gap-1.5"
+              className="py-2.5 px-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-500 hover:from-purple-500 hover:to-indigo-400 text-white font-extrabold text-xs shadow-md cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-1 min-w-0"
             >
-              <PlusCircle className="w-4 h-4" /> + Family Income
+              <PlusCircle className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">+ Family Income</span>
             </button>
           </div>
         </div>
 
         {/* 2-Column Summary Cards */}
-        <div className="grid grid-cols-2 gap-3 pt-1">
-          <div className="p-3.5 bg-slate-800/80 rounded-2xl border border-slate-700/80 space-y-1">
-            <span className="text-[10px] font-extrabold text-indigo-300 uppercase tracking-wider block">
-              Total Maintenance Spent
+        <div className="grid grid-cols-2 gap-2.5 pt-1">
+          <div className="p-3 bg-slate-800/80 rounded-2xl border border-slate-700/80 space-y-1 min-w-0">
+            <span className="text-[10px] font-extrabold text-indigo-300 uppercase tracking-wider block truncate">
+              Maintenance Spent
             </span>
-            <div className="text-2xl font-black text-emerald-400 font-mono">
+            <div className="text-xl sm:text-2xl font-black text-emerald-400 font-mono truncate">
               {formatCurrency(totalMaintenanceSpent, settings.currency)}
             </div>
-            <span className="text-[10px] text-slate-400 block">{homeMaintenanceList.length} items logged</span>
+            <span className="text-[10px] text-slate-400 block truncate">{homeMaintenanceList.length} items logged</span>
           </div>
 
-          <div className="p-3.5 bg-slate-800/80 rounded-2xl border border-slate-700/80 space-y-1">
-            <span className="text-[10px] font-extrabold text-purple-300 uppercase tracking-wider block">
-              Total Family Earnings
+          <div className="p-3 bg-slate-800/80 rounded-2xl border border-slate-700/80 space-y-1 min-w-0">
+            <span className="text-[10px] font-extrabold text-purple-300 uppercase tracking-wider block truncate">
+              Family Earnings
             </span>
-            <div className="text-2xl font-black text-purple-400 font-mono">
+            <div className="text-xl sm:text-2xl font-black text-purple-400 font-mono truncate">
               {formatCurrency(totalFamilyIncome, settings.currency)}
             </div>
-            <span className="text-[10px] text-slate-400 block">{familyIncomeList.length} income entries</span>
+            <span className="text-[10px] text-slate-400 block truncate">{familyIncomeList.length} income entries</span>
           </div>
         </div>
       </div>
 
       {/* Section Switcher Tabs */}
-      <div className="flex bg-slate-200 dark:bg-slate-800 p-1.5 rounded-2xl">
+      <div className="grid grid-cols-2 bg-slate-200 dark:bg-slate-800 p-1.5 rounded-2xl gap-1">
         <button
           onClick={() => setActiveTab('maintenance')}
-          className={`flex-1 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center justify-center gap-2 ${
+          className={`py-2 px-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1 min-w-0 ${
             activeTab === 'maintenance'
               ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-md'
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
           }`}
         >
-          <Home className="w-4 h-4" /> Home Maintenance Cards (3D Cubic)
+          <Home className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">Home Expenses (3D)</span>
         </button>
         <button
           onClick={() => setActiveTab('earnings')}
-          className={`flex-1 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center justify-center gap-2 ${
+          className={`py-2 px-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1 min-w-0 ${
             activeTab === 'earnings'
               ? 'bg-white dark:bg-slate-900 text-purple-600 dark:text-purple-400 shadow-md'
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
           }`}
         >
-          <Users className="w-4 h-4" /> Family Earnings Cards (3D Circle)
+          <Users className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">Family Income (3D)</span>
         </button>
       </div>
 
@@ -334,31 +339,31 @@ export const HomeFamilyScreen: React.FC = () => {
               <p className="text-[11px] text-slate-400">Click "+ Family Income" to log Father, Mother or Pension contribution.</p>
             </div>
           ) : (
-            /* Circle Cards Grid - Compact Size */
-            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3 justify-items-center">
+            /* Circle Cards Grid - Clean 2-Column Mobile Fit */
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 justify-items-center">
               {familyIncomeList.map((item) => (
                 /* Compact Glossy 3D Circle Card */
                 <div
                   key={item.id}
-                  className="w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-gradient-to-br from-purple-900 via-slate-900 to-indigo-950 p-2.5 border-2 border-purple-400/60 shadow-lg shadow-purple-950/40 flex flex-col items-center justify-center text-center text-white relative group transition-all hover:scale-105 cursor-default overflow-hidden"
+                  className="w-28 h-28 rounded-full bg-gradient-to-br from-purple-900 via-slate-900 to-indigo-950 p-2.5 border-2 border-purple-400/60 shadow-lg shadow-purple-950/40 flex flex-col items-center justify-center text-center text-white relative group transition-all hover:scale-105 cursor-default overflow-hidden shrink-0"
                 >
                   <button
                     onClick={() => deleteFamilyIncome(item.id)}
-                    className="absolute top-1 right-1 p-1 bg-black/40 hover:bg-rose-600 text-white rounded-full transition-all cursor-pointer opacity-0 group-hover:opacity-100 z-20"
+                    className="absolute top-1 right-1 p-1 bg-rose-600 hover:bg-rose-500 text-white rounded-full transition-all cursor-pointer shadow-md z-20"
                     title="Delete Record"
                   >
                     <Trash2 className="w-2.5 h-2.5" />
                   </button>
 
-                  <span className="text-[8px] font-black uppercase text-purple-300 bg-purple-950/80 px-1.5 py-0.5 rounded-full border border-purple-500/40 z-10 truncate max-w-[85px]">
+                  <span className="text-[8px] font-black uppercase text-purple-300 bg-purple-950/90 px-2 py-0.5 rounded-full border border-purple-500/40 z-10 truncate max-w-[72px] mt-1">
                     {item.memberName}
                   </span>
 
-                  <div className="text-sm font-black text-amber-300 font-mono tracking-tight my-0.5 z-10 drop-shadow-xs">
+                  <div className="text-xs font-black text-amber-300 font-mono tracking-tight my-0.5 z-10 truncate max-w-[80px]">
                     {formatCurrency(item.amount, settings.currency)}
                   </div>
 
-                  <span className="text-[8px] font-semibold text-slate-300 z-10 truncate max-w-[90px]">
+                  <span className="text-[8px] font-semibold text-slate-300 z-10 truncate max-w-[75px]">
                     {item.incomeSource}
                   </span>
                 </div>

@@ -227,7 +227,7 @@ export const HistoryScreen: React.FC = () => {
   };
 
   return (
-    <div className="max-w-md sm:max-w-xl md:max-w-2xl lg:max-w-4xl mx-auto p-3.5 sm:p-6 pb-28 space-y-4 sm:space-y-5">
+    <div className="w-full max-w-7xl mx-auto p-3 sm:p-6 pb-28 space-y-4 sm:space-y-6 overflow-x-hidden">
       {/* Top Overview Cards Banner (Profit, Sales & Home Maintenance Spent) */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {/* Profit Card */}
@@ -445,16 +445,16 @@ export const HistoryScreen: React.FC = () => {
                     className="bg-white dark:bg-slate-800 p-3.5 rounded-2xl border border-slate-200/90 dark:border-slate-700/90 shadow-xs hover:shadow-md transition-all flex items-center justify-between gap-3 group"
                   >
                     {/* Left Info */}
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-2.5 min-w-0 flex-1">
                       <div className={`p-2.5 rounded-xl shrink-0 ${badge.bg}`}>
                         <Icon className="w-5 h-5" />
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-extrabold text-sm text-slate-900 dark:text-white">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                          <span className="font-extrabold text-sm text-slate-900 dark:text-white truncate max-w-[130px] xs:max-w-[180px]">
                             {t.customerName || t.category || t.takenBy || badge.label}
                           </span>
-                          <span className={`text-[9px] uppercase font-extrabold px-2 py-0.5 rounded-md ${badge.bg}`}>
+                          <span className={`text-[9px] uppercase font-extrabold px-1.5 py-0.5 rounded-md shrink-0 ${badge.bg}`}>
                             {badge.label}
                           </span>
                         </div>
@@ -494,7 +494,7 @@ export const HistoryScreen: React.FC = () => {
                       </div>
 
                       {/* Edit / Delete Buttons */}
-                      <div className="flex flex-col gap-1 opacity-90 sm:opacity-0 group-hover:opacity-100 transition-opacity ml-1">
+                      <div className="flex flex-col gap-1 opacity-100 ml-1">
                         <button
                           onClick={() => setEditingTx(t)}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors cursor-pointer"

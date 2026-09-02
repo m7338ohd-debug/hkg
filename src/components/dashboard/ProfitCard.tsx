@@ -143,17 +143,17 @@ export const ProfitCard: React.FC = () => {
         </div>
 
         {/* Comparison: Auto vs Manual */}
-        <div className="p-4 bg-slate-800/80 rounded-2xl border border-slate-700/80 flex flex-col justify-between">
-          <div className="flex justify-between items-center text-xs">
-            <span className="text-slate-400 font-bold uppercase text-[10px]">Calculated Profit (Sales vs Purchases)</span>
-            <span className="text-blue-400 text-[10px] font-bold">Auto Math</span>
+        <div className="p-3.5 sm:p-4 bg-slate-800/80 rounded-2xl border border-slate-700/80 flex flex-col justify-between min-w-0">
+          <div className="flex justify-between items-center text-xs gap-1">
+            <span className="text-slate-400 font-bold uppercase text-[10px] truncate">Auto Calculated Profit</span>
+            <span className="text-blue-400 text-[10px] font-bold shrink-0">Auto Math</span>
           </div>
           <div className="text-2xl font-extrabold text-blue-300 font-mono mt-1">
             {formatCurrency(today.autoProfit, settings.currency)}
           </div>
-          <div className="flex items-center justify-between text-[10px] text-slate-400 mt-2 pt-2 border-t border-slate-700/60">
-            <span>Weekly: <strong className="text-emerald-400">{formatCurrency(weekly.profit, settings.currency)}</strong></span>
-            <span>Monthly: <strong className="text-emerald-400">{formatCurrency(monthly.profit, settings.currency)}</strong></span>
+          <div className="flex items-center justify-between text-[10px] text-slate-400 mt-2 pt-2 border-t border-slate-700/60 gap-1">
+            <span className="truncate">Weekly: <strong className="text-emerald-400">{formatCurrency(weekly.profit, settings.currency)}</strong></span>
+            <span className="truncate">Monthly: <strong className="text-emerald-400">{formatCurrency(monthly.profit, settings.currency)}</strong></span>
           </div>
         </div>
       </div>

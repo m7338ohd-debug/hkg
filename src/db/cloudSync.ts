@@ -1,6 +1,6 @@
-import type { Transaction, StoreSettings } from '../types';
+import type { Transaction, StoreSettings, HomeMaintenanceEntry, FamilyIncomeEntry } from '../types';
 
-// Multi-Device Cloud Sync Engine for 4 Store Staff Mobiles
+// Multi-Device Cloud Sync Engine for Store Mobiles
 const FIREBASE_RTDB_BASE = 'https://hkg-provision-store-default-rtdb.firebaseio.com/stores';
 const BACKUP_KV_BASE = 'https://kvdb.io/4y9HjL3xM28Z7qW';
 const SYNC_CHANNEL_NAME = 'hk_provision_store_sync_channel';
@@ -10,23 +10,59 @@ export interface CloudPayload {
   updatedAt: number;
   settings: StoreSettings;
   transactions: Transaction[];
+  homeMaintenance?: HomeMaintenanceEntry[];
+  familyIncome?: FamilyIncomeEntry[];
 }
 
-// Smart merger so entries from all 4 devices are combined without data loss
+export const generateShortConnectionCode = (storeName = 'STORE'): string => {
+  const cleanPrefix = (storeName || 'STORE')
+    .toUpperCase()
+    .replace(/[^A-Z]/g, '')
+    .slice(0, 5) || 'STORE';
+  const randomNum = Math.floor(1000 + Math.random() * 9000);
+  return `${cleanPrefix}-${randomNum}`;
+};
+
+// Smart mergers so entries from all connected devices are combined without data loss
 export const mergeTransactions = (local: Transaction[], remote: Transaction[]): Transaction[] => {
   const map = new Map<string, Transaction>();
   
-  // Add all remote first
   remote.forEach((t) => {
     if (t && t.id) map.set(t.id, t);
   });
 
-  // Add/overwrite with local
   local.forEach((t) => {
     if (t && t.id) map.set(t.id, t);
   });
 
-  // Convert to array and sort newest first
+  return Array.from(map.values()).sort((a, b) => b.createdAt - a.createdAt);
+};
+
+export const mergeHomeMaintenance = (
+  local: HomeMaintenanceEntry[],
+  remote: HomeMaintenanceEntry[]
+): HomeMaintenanceEntry[] => {
+  const map = new Map<string, HomeMaintenanceEntry>();
+  remote.forEach((item) => {
+    if (item && item.id) map.set(item.id, item);
+  });
+  local.forEach((item) => {
+    if (item && item.id) map.set(item.id, item);
+  });
+  return Array.from(map.values()).sort((a, b) => b.createdAt - a.createdAt);
+};
+
+export const mergeFamilyIncome = (
+  local: FamilyIncomeEntry[],
+  remote: FamilyIncomeEntry[]
+): FamilyIncomeEntry[] => {
+  const map = new Map<string, FamilyIncomeEntry>();
+  remote.forEach((item) => {
+    if (item && item.id) map.set(item.id, item);
+  });
+  local.forEach((item) => {
+    if (item && item.id) map.set(item.id, item);
+  });
   return Array.from(map.values()).sort((a, b) => b.createdAt - a.createdAt);
 };
 
@@ -86,7 +122,9 @@ export const sanitizeSyncCode = (code: string): string => {
 export const pushToCloudSync = async (
   syncCode: string,
   settings: StoreSettings,
-  transactions: Transaction[]
+  transactions: Transaction[],
+  homeMaintenance?: HomeMaintenanceEntry[],
+  familyIncome?: FamilyIncomeEntry[]
 ): Promise<boolean> => {
   const code = sanitizeSyncCode(syncCode);
   broadcastLocalChange(settings, transactions);
@@ -96,6 +134,8 @@ export const pushToCloudSync = async (
     updatedAt: Date.now(),
     settings,
     transactions,
+    homeMaintenance: homeMaintenance || [],
+    familyIncome: familyIncome || [],
   };
 
   if (!navigator.onLine) return false;
@@ -128,7 +168,12 @@ export const pushToCloudSync = async (
 // Pull live updates from Cloud (Firebase RTDB + KVDB fallback)
 export const pullFromCloudSync = async (
   syncCode: string
-): Promise<{ settings: StoreSettings; transactions: Transaction[] } | null> => {
+): Promise<{
+  settings: StoreSettings;
+  transactions: Transaction[];
+  homeMaintenance?: HomeMaintenanceEntry[];
+  familyIncome?: FamilyIncomeEntry[];
+} | null> => {
   const code = sanitizeSyncCode(syncCode);
   if (!navigator.onLine) return null;
 
@@ -145,6 +190,8 @@ export const pullFromCloudSync = async (
         return {
           settings: data.settings || {},
           transactions: data.transactions,
+          homeMaintenance: Array.isArray(data.homeMaintenance) ? data.homeMaintenance : [],
+          familyIncome: Array.isArray(data.familyIncome) ? data.familyIncome : [],
         };
       }
     }
@@ -160,6 +207,8 @@ export const pullFromCloudSync = async (
         return {
           settings: data.settings || {},
           transactions: data.transactions,
+          homeMaintenance: Array.isArray(data.homeMaintenance) ? data.homeMaintenance : [],
+          familyIncome: Array.isArray(data.familyIncome) ? data.familyIncome : [],
         };
       }
     }

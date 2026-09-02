@@ -17,24 +17,24 @@ export const Header: React.FC<HeaderProps> = ({ onOpenDownloadApp, onOpenLoginMo
   const syncCodeLabel = settings.storeSyncCode || 'AYESHA-STORE-01';
 
   return (
-    <header className="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-3 sm:px-4 py-2.5 shadow-xs safe-top-padding">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
+    <header className="sticky top-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-3 sm:px-6 py-2 shadow-xs safe-top-padding w-full overflow-hidden">
+      <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 w-full">
         {/* Store Title & Owner - Clickable to open Settings */}
-        <div className="flex items-center gap-2.5 sm:gap-3">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <button
             onClick={onOpenSettings}
-            className="group flex items-center gap-2.5 text-left cursor-pointer focus:outline-hidden active:scale-95 transition-transform"
+            className="group flex items-center gap-2 text-left cursor-pointer focus:outline-hidden active:scale-95 transition-transform min-w-0"
             title="Click to Open Store Settings"
           >
-            <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-500/20 shrink-0 group-hover:ring-2 group-hover:ring-emerald-400 transition-all">
+            <div className="relative w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-500/20 shrink-0 group-hover:ring-2 group-hover:ring-emerald-400 transition-all">
               <Store className="w-4 h-4 sm:w-5 sm:h-5" />
               <span className="absolute -bottom-1 -right-1 bg-slate-900 text-emerald-400 p-0.5 rounded-full border border-slate-700 shadow-xs" title="Settings">
                 <Settings className="w-2.5 h-2.5" />
               </span>
             </div>
-            <div>
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <h1 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base leading-tight tracking-tight truncate max-w-[130px] sm:max-w-xs group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <h1 className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-base leading-tight tracking-tight truncate max-w-[100px] xs:max-w-[140px] sm:max-w-xs group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
                   {settings.storeName}
                 </h1>
                 <button
@@ -43,52 +43,51 @@ export const Header: React.FC<HeaderProps> = ({ onOpenDownloadApp, onOpenLoginMo
                     e.stopPropagation();
                     if (onOpenLoginModal) onOpenLoginModal();
                   }}
-                  className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-extrabold tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/90 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 hover:bg-emerald-200 cursor-pointer transition-all"
+                  className="hidden md:inline-flex items-center gap-1 text-[10px] font-extrabold tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/90 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 hover:bg-emerald-200 cursor-pointer transition-all"
                   title="Active Store Login Session - Tap to manage"
                 >
                   <UserCheck className="w-3 h-3 text-emerald-500" />
-                  <span className="truncate max-w-[90px]">{activeUserLabel}</span>
+                  <span className="truncate max-w-[110px]">{activeUserLabel}</span>
                 </button>
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                Code: <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">{syncCodeLabel}</span>
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" title="Device Live Connected" />
-                <span className="text-[9px] text-slate-400 ml-1 hidden sm:inline">(Tap logo for Settings)</span>
+              <p className="text-[9px] sm:text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                <span className="font-mono text-emerald-600 dark:text-emerald-400 font-extrabold truncate max-w-[110px] sm:max-w-[180px]">{syncCodeLabel}</span>
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" title="Device Live Connected" />
               </p>
             </div>
           </button>
         </div>
 
         {/* Right Action Widgets */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
+        <div className="flex items-center gap-1.5 shrink-0">
           {/* Mobile App Download Button */}
           {onOpenDownloadApp && (
             <button
               onClick={onOpenDownloadApp}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs shadow-md shadow-emerald-600/20 cursor-pointer active:scale-95 transition-all"
+              className="p-1.5 sm:px-3 sm:py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs shadow-md shadow-emerald-600/20 cursor-pointer active:scale-95 transition-all flex items-center gap-1"
               title="Download & Install Mobile App"
             >
               <Smartphone className="w-4 h-4" />
-              <span className="hidden sm:inline">App</span>
+              <span className="hidden md:inline">Install App</span>
             </button>
           )}
 
-          {/* Store Login / Switch Button */}
+          {/* Store Device Connection Button */}
           {onOpenLoginModal && (
             <button
               onClick={onOpenLoginModal}
-              className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 sm:py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 font-extrabold text-xs border border-slate-200 dark:border-slate-700 cursor-pointer active:scale-95 transition-all"
-              title="Store Login & Sync Settings"
+              className="p-1.5 sm:px-3 sm:py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 font-extrabold text-xs border border-slate-200 dark:border-slate-700 cursor-pointer active:scale-95 transition-all flex items-center gap-1"
+              title="Multi-Device Connection & Data Sync Page"
             >
-              <LogIn className="w-4 h-4 text-emerald-500" />
-              <span className="hidden sm:inline">Store Login</span>
+              <Radio className="w-4 h-4 text-emerald-500 animate-pulse" />
+              <span className="hidden sm:inline">Connect Devices</span>
             </button>
           )}
 
           {/* Prominent Logout Button */}
           <button
             onClick={logoutStore}
-            className="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 sm:py-2 rounded-xl bg-red-50 dark:bg-red-950/60 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/80 border border-red-200 dark:border-red-800/80 font-black text-xs cursor-pointer active:scale-95 transition-all"
+            className="p-1.5 sm:px-3 sm:py-2 rounded-xl bg-red-50 dark:bg-red-950/60 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/80 border border-red-200 dark:border-red-800/80 font-black text-xs cursor-pointer active:scale-95 transition-all flex items-center gap-1"
             title="Logout of Store Session"
           >
             <LogOut className="w-4 h-4 text-red-500" />
@@ -98,22 +97,22 @@ export const Header: React.FC<HeaderProps> = ({ onOpenDownloadApp, onOpenLoginMo
           {/* Quick Sync Button */}
           <button
             onClick={syncNow}
-            className={`p-2 sm:p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer ${
+            className={`p-1.5 sm:p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer ${
               isSyncing ? 'animate-spin text-emerald-500' : ''
             }`}
             title="Sync store data with cloud"
           >
-            <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5" />
+            <RefreshCw className="w-4 h-4 sm:w-4 sm:h-4" />
           </button>
 
           {/* Theme Switcher */}
           <button
             onClick={toggleDarkMode}
-            className="p-2 sm:p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+            className="p-1.5 sm:p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
             title="Toggle Dark/Light Mode"
             aria-label="Toggle Theme"
           >
-            {settings.darkMode ? <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" /> : <Moon className="w-4 h-4 sm:w-5 sm:h-5" />}
+            {settings.darkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
           </button>
         </div>
       </div>

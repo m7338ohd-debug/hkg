@@ -1,4 +1,4 @@
-import type { Transaction, StoreSettings, DailySummary, CustomerCreditSummary } from '../types';
+import type { Transaction, StoreSettings, DailySummary, CustomerCreditSummary, HomeMaintenanceEntry, FamilyIncomeEntry } from '../types';
 
 export const formatCurrency = (amount: number, symbol = '₹'): string => {
   const formatted = new Intl.NumberFormat('en-IN', {
@@ -71,6 +71,104 @@ export const filterTransactionsByDate = (
   }
 
   return transactions;
+};
+
+export const filterHomeMaintenanceByDate = (
+  list: HomeMaintenanceEntry[],
+  range: 'today' | 'yesterday' | 'this_week' | 'this_month' | 'custom' | 'all',
+  customStart?: string,
+  customEnd?: string
+): HomeMaintenanceEntry[] => {
+  const today = getTodayDateString();
+  const todayObj = new Date();
+
+  if (range === 'today') {
+    return list.filter((item) => item.date === today);
+  }
+
+  if (range === 'yesterday') {
+    const yObj = new Date(todayObj);
+    yObj.setDate(yObj.getDate() - 1);
+    const yesterday = yObj.toISOString().split('T')[0];
+    return list.filter((item) => item.date === yesterday);
+  }
+
+  if (range === 'this_week') {
+    const firstDay = new Date(todayObj);
+    const day = todayObj.getDay();
+    const diff = todayObj.getDate() - day + (day === 0 ? -6 : 1);
+    firstDay.setDate(diff);
+    firstDay.setHours(0, 0, 0, 0);
+
+    return list.filter((item) => {
+      const itemDate = new Date(item.date);
+      return itemDate >= firstDay && itemDate <= todayObj;
+    });
+  }
+
+  if (range === 'this_month') {
+    const currentMonth = todayObj.getMonth();
+    const currentYear = todayObj.getFullYear();
+    return list.filter((item) => {
+      const itemDate = new Date(item.date);
+      return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear;
+    });
+  }
+
+  if (range === 'custom' && customStart && customEnd) {
+    return list.filter((item) => item.date >= customStart && item.date <= customEnd);
+  }
+
+  return list;
+};
+
+export const filterFamilyIncomeByDate = (
+  list: FamilyIncomeEntry[],
+  range: 'today' | 'yesterday' | 'this_week' | 'this_month' | 'custom' | 'all',
+  customStart?: string,
+  customEnd?: string
+): FamilyIncomeEntry[] => {
+  const today = getTodayDateString();
+  const todayObj = new Date();
+
+  if (range === 'today') {
+    return list.filter((item) => item.date === today);
+  }
+
+  if (range === 'yesterday') {
+    const yObj = new Date(todayObj);
+    yObj.setDate(yObj.getDate() - 1);
+    const yesterday = yObj.toISOString().split('T')[0];
+    return list.filter((item) => item.date === yesterday);
+  }
+
+  if (range === 'this_week') {
+    const firstDay = new Date(todayObj);
+    const day = todayObj.getDay();
+    const diff = todayObj.getDate() - day + (day === 0 ? -6 : 1);
+    firstDay.setDate(diff);
+    firstDay.setHours(0, 0, 0, 0);
+
+    return list.filter((item) => {
+      const itemDate = new Date(item.date);
+      return itemDate >= firstDay && itemDate <= todayObj;
+    });
+  }
+
+  if (range === 'this_month') {
+    const currentMonth = todayObj.getMonth();
+    const currentYear = todayObj.getFullYear();
+    return list.filter((item) => {
+      const itemDate = new Date(item.date);
+      return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear;
+    });
+  }
+
+  if (range === 'custom' && customStart && customEnd) {
+    return list.filter((item) => item.date >= customStart && item.date <= customEnd);
+  }
+
+  return list;
 };
 
 export const calculateSummary = (
@@ -388,8 +486,8 @@ export const calculateStoreLLMProfitMetrics = (
   const cashSalesProfit = (cashSales * profitRate) / 100;
   const safePurchaseProfit = Math.max(0, manualPurchaseProfit);
   const totalProfit = cashSalesProfit + safePurchaseProfit;
-  // User Formula: Take the average of both profits as "My One Day Earning"
-  const averageProfit = (cashSalesProfit + safePurchaseProfit) / 2;
+  // User Rule: Divide by 2 ONLY when purchase profit > 0 is added! If not, net profit is 100% of 2% sales profit!
+  const averageProfit = safePurchaseProfit > 0 ? (cashSalesProfit + safePurchaseProfit) / 2 : cashSalesProfit;
   const blendedProfitMargin = cashSales > 0 ? (averageProfit / cashSales) * 100 : profitRate;
 
   return {

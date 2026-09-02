@@ -10,9 +10,14 @@ import {
   ShieldCheck,
   Sparkles,
   Users,
+  Copy,
+  Check,
+  Share2,
+  Zap,
+  Radio,
 } from 'lucide-react';
 import { useCashFlow } from '../../context/CashFlowContext';
-import { sanitizeSyncCode } from '../../db/cloudSync';
+import { sanitizeSyncCode, generateShortConnectionCode } from '../../db/cloudSync';
 
 interface StoreLoginModalProps {
   isOpen: boolean;
@@ -22,17 +27,19 @@ interface StoreLoginModalProps {
 export const StoreLoginModal: React.FC<StoreLoginModalProps> = ({ isOpen, onClose }) => {
   const { settings, loginStore, showToast } = useCashFlow();
 
+  const [activeTab, setActiveTab] = useState<'connect' | 'generate'>('connect');
   const [inputCode, setInputCode] = useState(settings.storeSyncCode || 'AYESHA-STORE-01');
   const [selectedUser, setSelectedUser] = useState(settings.activeUser || 'Owner / Ayesha');
   const [customUser, setCustomUser] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
 
   if (!isOpen) return null;
 
   const presets = [
     { label: 'AYESHA-STORE-01', code: 'AYESHA-STORE-01' },
-    { label: 'Store PIN 1234', code: '1234' },
-    { label: 'Store PIN 5678', code: '5678' },
+    { label: 'STORE-8492', code: 'STORE-8492' },
+    { label: 'STORE-1234', code: '1234' },
   ];
 
   const userRoles = [
@@ -42,13 +49,37 @@ export const StoreLoginModal: React.FC<StoreLoginModalProps> = ({ isOpen, onClos
     { id: 'Employee 2', label: 'Staff Member 2', icon: User },
   ];
 
+  const handleGenerateShortCode = () => {
+    const newCode = generateShortConnectionCode(settings.storeName || 'STORE');
+    setInputCode(newCode);
+    try {
+      navigator.clipboard.writeText(newCode);
+      setCopiedCode(true);
+      setTimeout(() => setCopiedCode(false), 2500);
+      showToast('Connection Code Generated!', `${newCode} copied to clipboard. Enter this code on Device 2.`);
+    } catch (e) {
+      showToast('Code Generated!', `Connection Code: ${newCode}`);
+    }
+  };
+
+  const handleCopyCurrentCode = () => {
+    try {
+      navigator.clipboard.writeText(inputCode);
+      setCopiedCode(true);
+      setTimeout(() => setCopiedCode(false), 2500);
+      showToast('Code Copied!', `${inputCode} copied to clipboard`);
+    } catch (e) {
+      showToast('Code Ready', inputCode);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanCode = sanitizeSyncCode(inputCode);
     const userName = selectedUser === 'Other' ? customUser.trim() || 'Store Member' : selectedUser;
 
     if (!cleanCode) {
-      showToast('Invalid Code', 'Please enter a store sync code or PIN', 'error');
+      showToast('Invalid Code', 'Please enter a store sync connection code', 'error');
       return;
     }
 
@@ -62,13 +93,13 @@ export const StoreLoginModal: React.FC<StoreLoginModalProps> = ({ isOpen, onClos
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-md animate-in fade-in duration-200">
       <div
         className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 p-5 text-white relative">
+        {/* Connection Page Header */}
+        <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 p-4 sm:p-5 text-white relative">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
@@ -78,47 +109,121 @@ export const StoreLoginModal: React.FC<StoreLoginModalProps> = ({ isOpen, onClos
           </button>
 
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white shadow-lg shrink-0">
-              <KeyRound className="w-6 h-6" />
+            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white shadow-lg shrink-0">
+              <Radio className="w-6 h-6 animate-pulse" />
             </div>
             <div>
-              <h3 className="text-lg font-extrabold tracking-tight">Store Mobile Login</h3>
+              <h3 className="text-base sm:text-lg font-black tracking-tight">Device Connection & Data Sync Page</h3>
               <p className="text-xs text-emerald-100 mt-0.5">
-                Log in to sync all store data across your mobile & mom's mobile
+                Connect 2 mobile phones to share and mirror the exact same store data
               </p>
             </div>
+          </div>
+
+          {/* Mode Tabs */}
+          <div className="flex bg-black/20 p-1 rounded-xl mt-3 text-xs font-extrabold border border-white/10">
+            <button
+              type="button"
+              onClick={() => setActiveTab('connect')}
+              className={`flex-1 py-1.5 rounded-lg transition-all cursor-pointer text-center ${
+                activeTab === 'connect' ? 'bg-white text-emerald-700 shadow-md' : 'text-emerald-100 hover:text-white'
+              }`}
+            >
+              🔗 Connect via Code
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('generate');
+                handleGenerateShortCode();
+              }}
+              className={`flex-1 py-1.5 rounded-lg transition-all cursor-pointer text-center ${
+                activeTab === 'generate' ? 'bg-white text-emerald-700 shadow-md' : 'text-emerald-100 hover:text-white'
+              }`}
+            >
+              ⚡ Generate Short Code
+            </button>
           </div>
         </div>
 
         {/* Body Form */}
-        <form onSubmit={handleSubmit} className="p-5 space-y-4 text-slate-800 dark:text-slate-200">
-          <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 p-3.5 rounded-2xl text-xs space-y-1 text-emerald-900 dark:text-emerald-300">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-4 text-slate-800 dark:text-slate-200">
+          {/* Info Badge */}
+          <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 p-3 rounded-2xl text-xs space-y-1 text-emerald-900 dark:text-emerald-300">
             <p className="font-bold flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-amber-500" /> Instant Cross-Mobile Mirroring:
+              <Sparkles className="w-4 h-4 text-amber-500 shrink-0" /> Live Data Mirroring Active:
             </p>
             <p className="text-[11px] text-emerald-800 dark:text-emerald-400">
-              Entering the same Store Code/PIN on your mobile phone and your mom's phone binds both devices together. All sales, daily profits & expenses will update live on both screens!
+              All transactions, home maintenance & daily profit numbers in this device will reflect on the second device automatically in real-time.
             </p>
           </div>
 
-          {/* Store Code / PIN Input */}
+          {/* GENERATE CODE TAB DISPLAY */}
+          {activeTab === 'generate' && (
+            <div className="bg-slate-50 dark:bg-slate-800/80 p-4 rounded-2xl border border-emerald-500/30 text-center space-y-2">
+              <span className="text-[10px] uppercase font-black tracking-wider text-slate-400 block">
+                Generated Connection Short Code
+              </span>
+              <div className="text-2xl sm:text-3xl font-black font-mono text-emerald-600 dark:text-emerald-400 tracking-wider">
+                {inputCode}
+              </div>
+              <div className="flex gap-2 justify-center pt-1">
+                <button
+                  type="button"
+                  onClick={handleCopyCurrentCode}
+                  className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-md cursor-pointer transition-all active:scale-95"
+                >
+                  {copiedCode ? <Check className="w-4 h-4 text-amber-300" /> : <Copy className="w-4 h-4" />}
+                  {copiedCode ? 'COPIED!' : 'Copy Code'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleGenerateShortCode}
+                  className="px-3.5 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-extrabold text-xs flex items-center gap-1.5 cursor-pointer hover:bg-slate-300 transition-all"
+                >
+                  <RefreshCw className="w-4 h-4" /> New Code
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Store Code Input Placeholder */}
           <div>
-            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-              Store Sync Code / PIN
-            </label>
-            <input
-              type="text"
-              required
-              value={inputCode}
-              onChange={(e) => setInputCode(e.target.value.toUpperCase())}
-              placeholder="e.g. AYESHA-STORE-01 or 1234"
-              className="w-full px-3.5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-mono font-black text-slate-900 dark:text-white uppercase focus:ring-2 focus:ring-emerald-500 tracking-wider"
-            />
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                Short Connection Code
+              </label>
+              <button
+                type="button"
+                onClick={handleGenerateShortCode}
+                className="text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer flex items-center gap-1"
+              >
+                <Zap className="w-3 h-3 text-amber-500" /> Generate Code
+              </button>
+            </div>
+            <div className="relative">
+              <input
+                type="text"
+                required
+                value={inputCode}
+                onChange={(e) => setInputCode(e.target.value.toUpperCase())}
+                placeholder="Type connection code e.g. STORE-8492"
+                className="w-full px-3.5 py-3 pr-10 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-mono font-black text-slate-900 dark:text-white uppercase focus:ring-2 focus:ring-emerald-500 tracking-wider"
+              />
+              <button
+                type="button"
+                onClick={handleCopyCurrentCode}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-emerald-500 cursor-pointer"
+                title="Copy Connection Code"
+              >
+                {copiedCode ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
 
-          {/* Quick Preset Buttons */}
+          {/* Quick Presets */}
           <div>
-            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1.5">Quick Presets</span>
+            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1.5">Quick Connection Presets</span>
             <div className="flex flex-wrap gap-1.5">
               {presets.map((p) => (
                 <button
@@ -137,10 +242,10 @@ export const StoreLoginModal: React.FC<StoreLoginModalProps> = ({ isOpen, onClos
             </div>
           </div>
 
-          {/* Select User Profile */}
+          {/* User Role Selector */}
           <div>
             <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
-              Who is using this mobile phone?
+              Who is operating this mobile phone?
             </label>
             <div className="grid grid-cols-2 gap-2">
               {userRoles.map((role) => {
@@ -165,7 +270,7 @@ export const StoreLoginModal: React.FC<StoreLoginModalProps> = ({ isOpen, onClos
             </div>
           </div>
 
-          {/* Action Buttons */}
+          {/* Connect Action Button */}
           <button
             type="submit"
             disabled={isSubmitting}
@@ -176,13 +281,13 @@ export const StoreLoginModal: React.FC<StoreLoginModalProps> = ({ isOpen, onClos
             ) : (
               <LogIn className="w-4 h-4" />
             )}
-            {isSubmitting ? 'CONNECTING & SYNCING...' : 'LOG IN & SYNC MOBILE'}
+            {isSubmitting ? 'CONNECTING & MIRRORING DATA...' : 'CONNECT BOTH DEVICES & MIRROR DATA'}
           </button>
         </form>
 
         {/* Footer */}
         <div className="p-3 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-200 dark:border-slate-800 text-center text-[10px] text-slate-400">
-          Logged in data auto-syncs live every 1.5 seconds between phones.
+          Connected devices auto-mirror transactions, home maintenance & profits live.
         </div>
       </div>
     </div>

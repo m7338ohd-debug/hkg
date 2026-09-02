@@ -17,9 +17,15 @@ import {
   Sparkles,
   Smartphone,
   QrCode,
+  X,
+  Radio,
+  Zap,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { useCashFlow } from '../../context/CashFlowContext';
 import { exportDataJSON, SAMPLE_TRANSACTIONS } from '../../db/storage';
+import { generateShortConnectionCode } from '../../db/cloudSync';
 import { formatCurrency } from '../../utils/calculations';
 import { usePWAInstall } from '../../hooks/usePWAInstall';
 
@@ -28,8 +34,11 @@ interface SettingsScreenProps {
 }
 
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onOpenDownloadApp }) => {
-  const { isInstalled, isInstallable, promptInstall } = usePWAInstall();
   const { settings, updateSettings, resetPeriodData, importBackup, showToast, toggleDarkMode, syncNow, isSyncing, logoutStore } = useCashFlow();
+  const { isInstalled } = usePWAInstall();
+
+  const [confirmResetTarget, setConfirmResetTarget] = useState<'weekly' | 'monthly' | 'all' | null>(null);
+  const [connectCodeInput, setConnectCodeInput] = useState('');
 
   const [storeName, setStoreName] = useState(settings.storeName);
   const [ownerName, setOwnerName] = useState(settings.ownerName);
@@ -102,7 +111,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onOpenDownloadAp
   };
 
   return (
-    <div className="max-w-md mx-auto p-4 pb-24 space-y-5">
+    <div className="w-full max-w-7xl mx-auto p-3 sm:p-6 pb-28 space-y-5">
       {/* Header Banner */}
       <div className="bg-white dark:bg-slate-800 p-4 rounded-3xl shadow-lg border border-slate-200 dark:border-slate-700 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -162,6 +171,94 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onOpenDownloadAp
         >
           Switch Account / Logout Device
         </button>
+      </div>
+
+      {/* MULTI-DEVICE CONNECTION PAGE CARD */}
+      <div className="bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-900 text-white p-5 rounded-3xl shadow-xl border border-emerald-500/30 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-emerald-500/20 text-emerald-400 rounded-2xl border border-emerald-500/30">
+              <Radio className="w-6 h-6 animate-pulse" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-sm text-white">Multi-Device Connection Page</h3>
+              <p className="text-xs text-emerald-200">Connect 2 mobile phones to share and mirror exact same store data</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-slate-950/70 p-4 rounded-2xl border border-emerald-500/20 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-extrabold text-slate-300 uppercase tracking-wider">
+              Active Connection Code:
+            </span>
+            <span className="font-mono font-black text-amber-400 text-sm sm:text-base">
+              {settings.storeSyncCode}
+            </span>
+          </div>
+
+          {/* Buttons: Generate Short Code & Copy */}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={async () => {
+                const newCode = generateShortConnectionCode(settings.storeName);
+                setStoreSyncCode(newCode);
+                await logoutStore(); // re-log into new code
+                try {
+                  await navigator.clipboard.writeText(newCode);
+                } catch (e) {}
+                showToast('Short Connection Code Generated!', `${newCode} active & copied to clipboard. Enter this code on Device 2.`);
+              }}
+              className="flex-1 py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold text-xs shadow-md flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+            >
+              <Zap className="w-4 h-4 text-amber-300" /> Generate Short Code
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                try {
+                  navigator.clipboard.writeText(settings.storeSyncCode);
+                } catch (e) {}
+                showToast('Code Copied!', `${settings.storeSyncCode} copied to clipboard`);
+              }}
+              className="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-extrabold text-xs flex items-center gap-1.5 cursor-pointer border border-slate-700"
+            >
+              <Copy className="w-4 h-4" /> Copy
+            </button>
+          </div>
+        </div>
+
+        {/* Connection Code Input Placeholder for Device 2 */}
+        <div className="space-y-2 pt-1">
+          <label className="text-xs font-bold text-slate-300 block">
+            Enter Code to Connect Device 2 to Device 1:
+          </label>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={connectCodeInput}
+              onChange={(e) => setConnectCodeInput(e.target.value.toUpperCase())}
+              placeholder="Type connection code e.g. STORE-8492"
+              className="flex-1 px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono font-black text-white uppercase focus:ring-2 focus:ring-emerald-500 tracking-wider"
+            />
+            <button
+              type="button"
+              onClick={async () => {
+                if (!connectCodeInput.trim()) return;
+                await logoutStore();
+                setConnectCodeInput('');
+              }}
+              className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shrink-0 cursor-pointer shadow-md transition-all active:scale-95"
+            >
+              Connect
+            </button>
+          </div>
+          <p className="text-[10px] text-slate-400">
+            Entering the same short code on both mobile phones mirrors all sales, home goods & daily profits live between both screens.
+          </p>
+        </div>
       </div>
 
       {/* Store Profile Settings Form */}
@@ -394,23 +491,21 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onOpenDownloadAp
       {/* Danger Zone - Reset Data */}
       <div className="bg-rose-50/50 dark:bg-rose-950/20 p-5 rounded-3xl border border-rose-200 dark:border-rose-900/50 space-y-3">
         <h3 className="font-extrabold text-sm text-rose-700 dark:text-rose-400 flex items-center gap-2">
-          <Trash2 className="w-4 h-4" /> Reset Store Data
+          <Trash2 className="w-4 h-4" /> Reset Store & Home Data
         </h3>
 
         <div className="grid grid-cols-2 gap-2 text-xs">
           <button
-            onClick={() => {
-              if (confirm('Reset this week transactions?')) resetPeriodData('weekly');
-            }}
+            type="button"
+            onClick={() => setConfirmResetTarget('weekly')}
             className="py-2.5 px-2 rounded-xl bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-900 text-rose-600 dark:text-rose-400 font-bold hover:bg-rose-100 cursor-pointer"
           >
             Reset Weekly Data
           </button>
 
           <button
-            onClick={() => {
-              if (confirm('Reset this month transactions?')) resetPeriodData('monthly');
-            }}
+            type="button"
+            onClick={() => setConfirmResetTarget('monthly')}
             className="py-2.5 px-2 rounded-xl bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-900 text-rose-600 dark:text-rose-400 font-bold hover:bg-rose-100 cursor-pointer"
           >
             Reset Monthly Data
@@ -418,14 +513,74 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onOpenDownloadAp
         </div>
 
         <button
-          onClick={() => {
-            if (confirm('DANGER: This will delete ALL transactions! Are you sure?')) resetPeriodData('all');
-          }}
+          type="button"
+          onClick={() => setConfirmResetTarget('all')}
           className="w-full py-2.5 rounded-xl bg-rose-600 text-white font-extrabold text-xs shadow-md hover:bg-rose-700 cursor-pointer transition-all"
         >
-          Reset All Data Completely
+          Reset All Store & Home Data Completely
         </button>
       </div>
+
+      {/* Custom Confirmation Modal for Data Reset */}
+      {confirmResetTarget && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 w-full max-w-sm rounded-3xl p-5 shadow-2xl border border-rose-200 dark:border-rose-900 space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-700">
+              <h3 className="font-extrabold text-sm text-rose-600 dark:text-rose-400 flex items-center gap-2">
+                <Trash2 className="w-5 h-5" />
+                Confirm Data Reset
+              </h3>
+              <button
+                type="button"
+                onClick={() => setConfirmResetTarget(null)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-2 text-xs text-slate-600 dark:text-slate-300">
+              <p className="font-bold text-slate-900 dark:text-white text-sm">
+                {confirmResetTarget === 'all'
+                  ? 'Delete ALL Store & Home Records?'
+                  : confirmResetTarget === 'weekly'
+                  ? 'Reset This Week Data?'
+                  : 'Reset This Month Data?'}
+              </p>
+              <p>
+                {confirmResetTarget === 'all'
+                  ? 'This action will permanently delete all store transactions, home maintenance expenses, family member income, and manual profit overrides.'
+                  : confirmResetTarget === 'weekly'
+                  ? 'This action will permanently clear store transactions, home maintenance, and family records logged during this week.'
+                  : 'This action will permanently clear store transactions, home maintenance, and family records logged during this month.'}
+              </p>
+              <p className="text-[11px] text-rose-500 font-bold">This operation cannot be undone!</p>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setConfirmResetTarget(null)}
+                className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl cursor-pointer hover:bg-slate-200"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const target = confirmResetTarget;
+                  setConfirmResetTarget(null);
+                  resetPeriodData(target);
+                }}
+                className="flex-1 py-2.5 bg-rose-600 text-white text-xs font-extrabold rounded-xl shadow-md hover:bg-rose-700 cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <Trash2 className="w-4 h-4" />
+                Yes, Reset Now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

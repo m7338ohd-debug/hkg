@@ -93,7 +93,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab, 
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-3.5 sm:p-4 pb-28 space-y-4 sm:space-y-5">
+    <div className="w-full max-w-7xl mx-auto p-3 sm:p-6 pb-28 space-y-4 sm:space-y-6 overflow-x-hidden">
       {/* Hero Quick Action Strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
         <button
@@ -182,23 +182,24 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab, 
             </div>
           </div>
 
-          <div className="flex sm:flex-col items-center sm:items-end justify-between gap-3 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-800">
-            <div className="text-left sm:text-right">
-              <span className="text-[10px] text-emerald-400 uppercase font-extrabold">2% Daily Net Profit</span>
-              <div className="text-xl font-black text-emerald-400 font-mono">
+          <div className="grid grid-cols-2 gap-2 pt-3 border-t sm:border-t-0 border-slate-800/80 w-full">
+            <div className="bg-slate-950/60 p-2.5 rounded-2xl border border-emerald-500/20 text-left min-w-0">
+              <span className="text-[10px] text-emerald-400 uppercase font-extrabold block truncate">2% Daily Net Profit</span>
+              <div className="text-lg font-black text-emerald-400 font-mono mt-0.5 truncate">
                 {formatCurrency(today.profit, settings.currency)}
               </div>
-              <span className="text-[9px] text-slate-400 block">Based on Total Sales ({formatCurrency(today.totalSales, settings.currency)})</span>
+              <span className="text-[9px] text-slate-400 block truncate">Sales: {formatCurrency(today.totalSales, settings.currency)}</span>
             </div>
 
             <button
               onClick={scrollToUdharList}
-              className="text-right group cursor-pointer"
+              className="bg-slate-950/60 p-2.5 rounded-2xl border border-purple-500/20 text-left group cursor-pointer hover:border-purple-500/40 transition-colors min-w-0"
             >
-              <span className="text-[10px] text-slate-400 uppercase font-bold block">Outstanding Udhar</span>
-              <div className="text-base font-bold text-purple-400 group-hover:underline">
+              <span className="text-[10px] text-purple-300 uppercase font-extrabold block truncate">Outstanding Udhar</span>
+              <div className="text-lg font-black text-purple-400 font-mono mt-0.5 truncate group-hover:underline">
                 {formatCurrency(today.outstandingCredit, settings.currency)}
               </div>
+              <span className="text-[9px] text-purple-200 block truncate">Tap to View List</span>
             </button>
           </div>
         </div>
