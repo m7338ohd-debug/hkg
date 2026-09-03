@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import type { Transaction, StoreSettings, TransactionType, HomeMaintenanceEntry, FamilyIncomeEntry } from '../types';
+import type { Transaction, StoreSettings, TransactionType, HomeMaintenanceEntry, FamilyIncomeEntry, FixedMonthlyExpenseEntry } from '../types';
 import {
   loadSettings,
   saveSettings,
@@ -9,6 +9,8 @@ import {
   saveHomeMaintenance,
   loadFamilyIncome,
   saveFamilyIncome,
+  loadFixedMonthlyExpenses,
+  saveFixedMonthlyExpenses,
   importDataJSON,
 } from '../db/storage';
 import {
@@ -34,6 +36,7 @@ interface CashFlowContextType {
   settings: StoreSettings;
   homeMaintenanceList: HomeMaintenanceEntry[];
   familyIncomeList: FamilyIncomeEntry[];
+  fixedMonthlyList: FixedMonthlyExpenseEntry[];
   toast: ToastMessage | null;
   isSyncing: boolean;
   showToast: (title: string, message?: string, type?: 'success' | 'error' | 'info', undoable?: boolean) => void;
@@ -46,6 +49,8 @@ interface CashFlowContextType {
   deleteHomeMaintenance: (id: string) => void;
   addFamilyIncome: (entry: Omit<FamilyIncomeEntry, 'id' | 'createdAt'>) => void;
   deleteFamilyIncome: (id: string) => void;
+  addFixedMonthlyExpense: (entry: Omit<FixedMonthlyExpenseEntry, 'id' | 'createdAt'>) => void;
+  deleteFixedMonthlyExpense: (id: string) => void;
   updateSettings: (newSettings: Partial<StoreSettings>) => void;
   resetPeriodData: (period: 'weekly' | 'monthly' | 'all') => void;
   importBackup: (jsonStr: string) => { success: boolean; message: string };
@@ -73,6 +78,7 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [transactions, setTransactionsState] = useState<Transaction[]>(loadTransactions);
   const [homeMaintenanceList, setHomeMaintenanceList] = useState<HomeMaintenanceEntry[]>(loadHomeMaintenance);
   const [familyIncomeList, setFamilyIncomeList] = useState<FamilyIncomeEntry[]>(loadFamilyIncome);
+  const [fixedMonthlyList, setFixedMonthlyList] = useState<FixedMonthlyExpenseEntry[]>(loadFixedMonthlyExpenses);
   const [lastDeletedTx, setLastDeletedTx] = useState<Transaction | null>(null);
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
@@ -123,6 +129,29 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     showToast('Income Record Deleted', 'Family member income entry removed', 'info');
   };
 
+  const addFixedMonthlyExpense = (entry: Omit<FixedMonthlyExpenseEntry, 'id' | 'createdAt'>) => {
+    const newEntry: FixedMonthlyExpenseEntry = {
+      ...entry,
+      id: `fx_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      createdAt: Date.now(),
+    };
+    setFixedMonthlyList((prev) => {
+      const updated = [newEntry, ...prev];
+      saveFixedMonthlyExpenses(updated);
+      return updated;
+    });
+    showToast('Fixed Monthly Record Saved', `Added ${newEntry.title} (₹${newEntry.amount})`, 'success');
+  };
+
+  const deleteFixedMonthlyExpense = (id: string) => {
+    setFixedMonthlyList((prev) => {
+      const updated = prev.filter((item) => item.id !== id);
+      saveFixedMonthlyExpenses(updated);
+      return updated;
+    });
+    showToast('Record Removed', 'Fixed monthly requirement deleted', 'info');
+  };
+
   // Sync html dark mode class
   useEffect(() => {
     if (settings.darkMode) {
@@ -139,6 +168,27 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setTransactionsState((prev) => {
           const merged = mergeTransactions(prev, remoteData.transactions);
           saveTransactions(merged);
+          return merged;
+        });
+      }
+      if (remoteData.homeMaintenance) {
+        setHomeMaintenanceList((prev) => {
+          const merged = mergeHomeMaintenance(prev, remoteData.homeMaintenance!);
+          saveHomeMaintenance(merged);
+          return merged;
+        });
+      }
+      if (remoteData.familyIncome) {
+        setFamilyIncomeList((prev) => {
+          const merged = mergeFamilyIncome(prev, remoteData.familyIncome!);
+          saveFamilyIncome(merged);
+          return merged;
+        });
+      }
+      if (remoteData.fixedMonthly) {
+        setFixedMonthlyList((prev) => {
+          const merged = mergeFixedMonthly(prev, remoteData.fixedMonthly!);
+          saveFixedMonthlyExpenses(merged);
           return merged;
         });
       }
@@ -162,6 +212,27 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           return merged;
         });
       }
+      if (cloudData.homeMaintenance) {
+        setHomeMaintenanceList((prev) => {
+          const merged = mergeHomeMaintenance(prev, cloudData.homeMaintenance!);
+          saveHomeMaintenance(merged);
+          return merged;
+        });
+      }
+      if (cloudData.familyIncome) {
+        setFamilyIncomeList((prev) => {
+          const merged = mergeFamilyIncome(prev, cloudData.familyIncome!);
+          saveFamilyIncome(merged);
+          return merged;
+        });
+      }
+      if (cloudData.fixedMonthly) {
+        setFixedMonthlyList((prev) => {
+          const merged = mergeFixedMonthly(prev, cloudData.fixedMonthly!);
+          saveFixedMonthlyExpenses(merged);
+          return merged;
+        });
+      }
       if (cloudData.settings) {
         setSettingsState((prev) => {
           const mergedS = { ...prev, ...cloudData.settings };
@@ -174,7 +245,7 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return unsubscribeSSE;
   }, [settings.storeSyncCode]);
 
-  // 3. Fallback polling every 2 seconds for guaranteed redundancy
+  // 3. Fallback polling every 2 seconds for guaranteed redundancy across devices
   useEffect(() => {
     let isMounted = true;
     const syncCode = settings.storeSyncCode || 'AYESHA-STORE-01';
@@ -189,6 +260,36 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               const merged = mergeTransactions(prev, cloudData.transactions);
               if (JSON.stringify(merged) !== JSON.stringify(prev)) {
                 saveTransactions(merged);
+                return merged;
+              }
+              return prev;
+            });
+          }
+          if (cloudData.homeMaintenance) {
+            setHomeMaintenanceList((prev) => {
+              const merged = mergeHomeMaintenance(prev, cloudData.homeMaintenance!);
+              if (JSON.stringify(merged) !== JSON.stringify(prev)) {
+                saveHomeMaintenance(merged);
+                return merged;
+              }
+              return prev;
+            });
+          }
+          if (cloudData.familyIncome) {
+            setFamilyIncomeList((prev) => {
+              const merged = mergeFamilyIncome(prev, cloudData.familyIncome!);
+              if (JSON.stringify(merged) !== JSON.stringify(prev)) {
+                saveFamilyIncome(merged);
+                return merged;
+              }
+              return prev;
+            });
+          }
+          if (cloudData.fixedMonthly) {
+            setFixedMonthlyList((prev) => {
+              const merged = mergeFixedMonthly(prev, cloudData.fixedMonthly!);
+              if (JSON.stringify(merged) !== JSON.stringify(prev)) {
+                saveFixedMonthlyExpenses(merged);
                 return merged;
               }
               return prev;
@@ -213,12 +314,36 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const syncNow = async () => {
     setIsSyncing(true);
     const syncCode = settings.storeSyncCode || 'AYESHA-STORE-01';
-    await pushToCloudSync(syncCode, settings, transactions);
+    await pushToCloudSync(
+      syncCode,
+      settings,
+      transactions,
+      homeMaintenanceList,
+      familyIncomeList,
+      fixedMonthlyList
+    );
     const remote = await pullFromCloudSync(syncCode);
-    if (remote && remote.transactions) {
-      const merged = mergeTransactions(transactions, remote.transactions);
-      setTransactionsState(merged);
-      saveTransactions(merged);
+    if (remote) {
+      if (remote.transactions) {
+        const merged = mergeTransactions(transactions, remote.transactions);
+        setTransactionsState(merged);
+        saveTransactions(merged);
+      }
+      if (remote.homeMaintenance) {
+        const merged = mergeHomeMaintenance(homeMaintenanceList, remote.homeMaintenance);
+        setHomeMaintenanceList(merged);
+        saveHomeMaintenance(merged);
+      }
+      if (remote.familyIncome) {
+        const merged = mergeFamilyIncome(familyIncomeList, remote.familyIncome);
+        setFamilyIncomeList(merged);
+        saveFamilyIncome(merged);
+      }
+      if (remote.fixedMonthly) {
+        const merged = mergeFixedMonthly(fixedMonthlyList, remote.fixedMonthly);
+        setFixedMonthlyList(merged);
+        saveFixedMonthlyExpenses(merged);
+      }
       if (remote.settings) {
         setSettingsState(remote.settings);
         saveSettings(remote.settings);
@@ -495,6 +620,7 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       let mergedT = [...transactions];
       let mergedH = [...homeMaintenanceList];
       let mergedF = [...familyIncomeList];
+      let mergedM = [...fixedMonthlyList];
       let mergedS = {
         ...settings,
         storeSyncCode: cleanCode,
@@ -512,6 +638,9 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
         if (Array.isArray(remote.familyIncome)) {
           mergedF = mergeFamilyIncome(familyIncomeList, remote.familyIncome);
+        }
+        if (Array.isArray(remote.fixedMonthly)) {
+          mergedM = mergeFixedMonthly(fixedMonthlyList, remote.fixedMonthly);
         }
         if (remote.settings) {
           mergedS = {
@@ -534,11 +663,14 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setFamilyIncomeList(mergedF);
       saveFamilyIncome(mergedF);
 
+      setFixedMonthlyList(mergedM);
+      saveFixedMonthlyExpenses(mergedM);
+
       setSettingsState(mergedS);
       saveSettings(mergedS);
 
-      await pushToCloudSync(cleanCode, mergedS, mergedT, mergedH, mergedF);
-      showToast('Store Devices Connected!', `Mirroring live data as ${userName} (Code: ${cleanCode})`);
+      await pushToCloudSync(cleanCode, mergedS, mergedT, mergedH, mergedF, mergedM);
+      showToast('Store Devices Connected!', `Live data synced for ${userName} (Code: ${cleanCode})`);
       return true;
     } catch (err) {
       showToast('Connection Warning', 'Using offline cached data. Will sync when reconnected.', 'info');
@@ -690,6 +822,7 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         settings,
         homeMaintenanceList,
         familyIncomeList,
+        fixedMonthlyList,
         toast,
         isSyncing,
         showToast,
@@ -702,6 +835,8 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         deleteHomeMaintenance,
         addFamilyIncome,
         deleteFamilyIncome,
+        addFixedMonthlyExpense,
+        deleteFixedMonthlyExpense,
         updateSettings,
         resetPeriodData,
         importBackup,

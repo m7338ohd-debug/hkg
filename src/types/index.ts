@@ -39,7 +39,7 @@ export interface StoreSettings {
   currency: string;
   openingCash: number;
   investedAmount: number; // Default 25000
-  profitRate: number; // Default 2 (%)
+  profitRate: number; // Default 10 (%)
   storeSyncCode: string; // Default 'AYESHA-STORE-01' for 4-user mobile sync
   darkMode: boolean;
   autoBackupReminder: boolean;
@@ -53,6 +53,7 @@ export interface StoreSettings {
   createdAccountDate?: string; // YYYY-MM-DD
   mobileNumber?: string; // e.g. '+91 98765 43210'
   isPhoneVerified?: boolean; // Whether phone OTP was verified
+  compactMobileView?: boolean; // Enforce Oppo & Mobile App Compact View (Default: true)
 }
 
 export interface CustomerCreditSummary {
@@ -78,7 +79,7 @@ export interface DailySummary {
   withdrawals: number;
   cashInHand: number;
   profit: number; // Final daily profit used
-  autoProfit: number; // Auto-calculated 2% or Sales - Purchases
+  autoProfit: number; // Auto-calculated 10% of Sales
   manualProfit?: number; // User manually entered daily profit if set
   manualProfitNotes?: string; // Optional description/notes for manual profit
   isManualProfit: boolean; // Whether profit was manually overridden
@@ -94,6 +95,15 @@ export interface HomeMaintenanceEntry {
   amount: number;
   notes?: string;
   addedBy?: string;
+  createdAt: number;
+}
+
+export interface FixedMonthlyExpenseEntry {
+  id: string;
+  title: string; // e.g. 'Maid Salary (Meei)', 'House Rent', 'Electricity Commitment', 'Internet'
+  amount: number;
+  category?: 'Maid / Domestic' | 'House Rent' | 'Electricity & Water' | 'School / College Fee' | 'Other Fixed Commitment';
+  notes?: string;
   createdAt: number;
 }
 

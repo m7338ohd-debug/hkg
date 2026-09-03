@@ -39,7 +39,7 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   currency: '₹',
   openingCash: 5000,
   investedAmount: 25000,
-  profitRate: 2,
+  profitRate: 10,
   storeSyncCode: 'AYESHA-STORE-01',
   darkMode: true,
   autoBackupReminder: true,
@@ -120,6 +120,7 @@ export const saveTransactions = (transactions: Transaction[]): void => {
 
 const HOME_MAINTENANCE_KEY = 'provision_store_home_maintenance';
 const FAMILY_INCOME_KEY = 'provision_store_family_income';
+const FIXED_MONTHLY_KEY = 'provision_store_fixed_monthly_expenses';
 
 export const loadHomeMaintenance = (): any[] => {
   try {
@@ -163,11 +164,33 @@ export const saveFamilyIncome = (entries: any[]): void => {
   }
 };
 
+export const loadFixedMonthlyExpenses = (): any[] => {
+  try {
+    const data = localStorage.getItem(FIXED_MONTHLY_KEY);
+    if (data) {
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) {
+    console.error('Error loading fixed monthly expenses data', e);
+  }
+  return [];
+};
+
+export const saveFixedMonthlyExpenses = (entries: any[]): void => {
+  try {
+    localStorage.setItem(FIXED_MONTHLY_KEY, JSON.stringify(entries));
+  } catch (e) {
+    console.error('Error saving fixed monthly expenses data', e);
+  }
+};
+
 export const exportDataJSON = (): string => {
   const settings = loadSettings();
   const transactions = loadTransactions();
   const homeMaintenance = loadHomeMaintenance();
   const familyIncome = loadFamilyIncome();
+  const fixedMonthlyExpenses = loadFixedMonthlyExpenses();
   const backup = {
     appName: 'Provision Store Cash Flow',
     exportDate: new Date().toISOString(),
@@ -176,6 +199,7 @@ export const exportDataJSON = (): string => {
     transactions,
     homeMaintenance,
     familyIncome,
+    fixedMonthlyExpenses,
   };
   return JSON.stringify(backup, null, 2);
 };
@@ -197,6 +221,9 @@ export const importDataJSON = (jsonString: string): { success: boolean; message:
     }
     if (Array.isArray(parsed.familyIncome)) {
       saveFamilyIncome(parsed.familyIncome);
+    }
+    if (Array.isArray(parsed.fixedMonthlyExpenses)) {
+      saveFixedMonthlyExpenses(parsed.fixedMonthlyExpenses);
     }
     return {
       success: true,

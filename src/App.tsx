@@ -45,7 +45,13 @@ const MainApp: React.FC = () => {
   }
 
   return (
-    <div className="min-h-dvh w-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col justify-between transition-colors duration-200 selection:bg-emerald-500 selection:text-white relative overflow-x-hidden">
+    <div
+      className={`min-h-dvh w-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col justify-between transition-colors duration-200 selection:bg-emerald-500 selection:text-white relative overflow-x-hidden ${
+        settings.compactMobileView !== false
+          ? 'max-w-md sm:max-w-xl mx-auto border-x border-slate-200/80 dark:border-slate-800/80 shadow-2xl'
+          : ''
+      }`}
+    >
       {/* Top Header - Store Icon click opens Settings */}
       <Header
         onOpenDownloadApp={handleOpenDownloadApp}

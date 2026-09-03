@@ -120,7 +120,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onOpenDownloadAp
           </div>
           <div>
             <h2 className="font-extrabold text-base text-slate-900 dark:text-white">Store Settings</h2>
-            <p className="text-xs text-slate-400">Configure profile, 2% profit, 25k investment & cloud sync</p>
+            <p className="text-xs text-slate-400">Configure profile, 10% profit, 25k investment & cloud sync</p>
           </div>
         </div>
 
@@ -388,12 +388,37 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onOpenDownloadAp
           <button
             onClick={toggleDarkMode}
             className={`w-12 h-6 rounded-full p-1 transition-colors cursor-pointer ${
-              settings.darkMode ? 'bg-emerald-600' : 'bg-slate-300'
+              settings.darkMode ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'
             }`}
           >
             <div
               className={`w-4 h-4 rounded-full bg-white transition-transform ${
                 settings.darkMode ? 'translate-x-6' : 'translate-x-0'
+              }`}
+            />
+          </button>
+        </div>
+
+        {/* Mobile App Compact Mode Slider Toggle (Oppo / Phone Screen Fit) */}
+        <div className="flex items-center justify-between py-2 border-t border-slate-100 dark:border-slate-700">
+          <div className="flex items-center gap-2.5">
+            <Smartphone className="w-5 h-5 text-emerald-500" />
+            <div>
+              <h4 className="font-bold text-xs text-slate-900 dark:text-white">Mobile Compact App Mode</h4>
+              <p className="text-[10px] text-slate-400">Fits Oppo & mobile phone screens without tablet views</p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => updateSettings({ compactMobileView: !(settings.compactMobileView !== false) })}
+            className={`w-12 h-6 rounded-full p-1 transition-colors cursor-pointer ${
+              settings.compactMobileView !== false ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'
+            }`}
+          >
+            <div
+              className={`w-4 h-4 rounded-full bg-white transition-transform ${
+                settings.compactMobileView !== false ? 'translate-x-6' : 'translate-x-0'
               }`}
             />
           </button>

@@ -1,4 +1,10 @@
-import type { Transaction, StoreSettings, HomeMaintenanceEntry, FamilyIncomeEntry } from '../types';
+import type {
+  Transaction,
+  StoreSettings,
+  HomeMaintenanceEntry,
+  FamilyIncomeEntry,
+  FixedMonthlyExpenseEntry,
+} from '../types';
 
 // Multi-Device Cloud Sync Engine for Store Mobiles
 const FIREBASE_RTDB_BASE = 'https://hkg-provision-store-default-rtdb.firebaseio.com/stores';
@@ -12,6 +18,7 @@ export interface CloudPayload {
   transactions: Transaction[];
   homeMaintenance?: HomeMaintenanceEntry[];
   familyIncome?: FamilyIncomeEntry[];
+  fixedMonthly?: FixedMonthlyExpenseEntry[];
 }
 
 export const generateShortConnectionCode = (storeName = 'STORE'): string => {
@@ -27,11 +34,11 @@ export const generateShortConnectionCode = (storeName = 'STORE'): string => {
 export const mergeTransactions = (local: Transaction[], remote: Transaction[]): Transaction[] => {
   const map = new Map<string, Transaction>();
   
-  remote.forEach((t) => {
+  (remote || []).forEach((t) => {
     if (t && t.id) map.set(t.id, t);
   });
 
-  local.forEach((t) => {
+  (local || []).forEach((t) => {
     if (t && t.id) map.set(t.id, t);
   });
 
@@ -43,10 +50,10 @@ export const mergeHomeMaintenance = (
   remote: HomeMaintenanceEntry[]
 ): HomeMaintenanceEntry[] => {
   const map = new Map<string, HomeMaintenanceEntry>();
-  remote.forEach((item) => {
+  (remote || []).forEach((item) => {
     if (item && item.id) map.set(item.id, item);
   });
-  local.forEach((item) => {
+  (local || []).forEach((item) => {
     if (item && item.id) map.set(item.id, item);
   });
   return Array.from(map.values()).sort((a, b) => b.createdAt - a.createdAt);
@@ -57,13 +64,27 @@ export const mergeFamilyIncome = (
   remote: FamilyIncomeEntry[]
 ): FamilyIncomeEntry[] => {
   const map = new Map<string, FamilyIncomeEntry>();
-  remote.forEach((item) => {
+  (remote || []).forEach((item) => {
     if (item && item.id) map.set(item.id, item);
   });
-  local.forEach((item) => {
+  (local || []).forEach((item) => {
     if (item && item.id) map.set(item.id, item);
   });
   return Array.from(map.values()).sort((a, b) => b.createdAt - a.createdAt);
+};
+
+export const mergeFixedMonthly = (
+  local: FixedMonthlyExpenseEntry[],
+  remote: FixedMonthlyExpenseEntry[]
+): FixedMonthlyExpenseEntry[] => {
+  const map = new Map<string, FixedMonthlyExpenseEntry>();
+  (remote || []).forEach((item) => {
+    if (item && item.id) map.set(item.id, item);
+  });
+  (local || []).forEach((item) => {
+    if (item && item.id) map.set(item.id, item);
+  });
+  return Array.from(map.values());
 };
 
 // BroadcastChannel for instant local tab sync
@@ -77,7 +98,13 @@ try {
 }
 
 export const subscribeLocalSync = (
-  onRemoteUpdate: (data: { settings: StoreSettings; transactions: Transaction[] }) => void
+  onRemoteUpdate: (data: {
+    settings: StoreSettings;
+    transactions: Transaction[];
+    homeMaintenance?: HomeMaintenanceEntry[];
+    familyIncome?: FamilyIncomeEntry[];
+    fixedMonthly?: FixedMonthlyExpenseEntry[];
+  }) => void
 ) => {
   if (!broadcastChannel) return () => {};
 
@@ -86,6 +113,9 @@ export const subscribeLocalSync = (
       onRemoteUpdate({
         settings: event.data.payload.settings,
         transactions: event.data.payload.transactions,
+        homeMaintenance: event.data.payload.homeMaintenance,
+        familyIncome: event.data.payload.familyIncome,
+        fixedMonthly: event.data.payload.fixedMonthly,
       });
     }
   };
@@ -96,7 +126,13 @@ export const subscribeLocalSync = (
   };
 };
 
-export const broadcastLocalChange = (settings: StoreSettings, transactions: Transaction[]) => {
+export const broadcastLocalChange = (
+  settings: StoreSettings,
+  transactions: Transaction[],
+  homeMaintenance?: HomeMaintenanceEntry[],
+  familyIncome?: FamilyIncomeEntry[],
+  fixedMonthly?: FixedMonthlyExpenseEntry[]
+) => {
   try {
     if (broadcastChannel) {
       broadcastChannel.postMessage({
@@ -104,6 +140,9 @@ export const broadcastLocalChange = (settings: StoreSettings, transactions: Tran
         payload: {
           settings,
           transactions,
+          homeMaintenance,
+          familyIncome,
+          fixedMonthly,
           timestamp: Date.now(),
         },
       });
@@ -124,10 +163,11 @@ export const pushToCloudSync = async (
   settings: StoreSettings,
   transactions: Transaction[],
   homeMaintenance?: HomeMaintenanceEntry[],
-  familyIncome?: FamilyIncomeEntry[]
+  familyIncome?: FamilyIncomeEntry[],
+  fixedMonthly?: FixedMonthlyExpenseEntry[]
 ): Promise<boolean> => {
   const code = sanitizeSyncCode(syncCode);
-  broadcastLocalChange(settings, transactions);
+  broadcastLocalChange(settings, transactions, homeMaintenance, familyIncome, fixedMonthly);
 
   const payload: CloudPayload = {
     syncCode: code,
@@ -136,6 +176,7 @@ export const pushToCloudSync = async (
     transactions,
     homeMaintenance: homeMaintenance || [],
     familyIncome: familyIncome || [],
+    fixedMonthly: fixedMonthly || [],
   };
 
   if (!navigator.onLine) return false;
@@ -173,6 +214,7 @@ export const pullFromCloudSync = async (
   transactions: Transaction[];
   homeMaintenance?: HomeMaintenanceEntry[];
   familyIncome?: FamilyIncomeEntry[];
+  fixedMonthly?: FixedMonthlyExpenseEntry[];
 } | null> => {
   const code = sanitizeSyncCode(syncCode);
   if (!navigator.onLine) return null;
@@ -192,6 +234,7 @@ export const pullFromCloudSync = async (
           transactions: data.transactions,
           homeMaintenance: Array.isArray(data.homeMaintenance) ? data.homeMaintenance : [],
           familyIncome: Array.isArray(data.familyIncome) ? data.familyIncome : [],
+          fixedMonthly: Array.isArray(data.fixedMonthly) ? data.fixedMonthly : [],
         };
       }
     }
@@ -209,6 +252,7 @@ export const pullFromCloudSync = async (
           transactions: data.transactions,
           homeMaintenance: Array.isArray(data.homeMaintenance) ? data.homeMaintenance : [],
           familyIncome: Array.isArray(data.familyIncome) ? data.familyIncome : [],
+          fixedMonthly: Array.isArray(data.fixedMonthly) ? data.fixedMonthly : [],
         };
       }
     }
@@ -218,10 +262,16 @@ export const pullFromCloudSync = async (
   return null;
 };
 
-// Live EventSource SSE Listener for Instant Real-Time Push to all 4 Mobiles
+// Live EventSource SSE Listener for Instant Real-Time Push to all connected Mobiles
 export const subscribeCloudSSE = (
   syncCode: string,
-  onCloudUpdate: (data: { settings?: StoreSettings; transactions: Transaction[] }) => void
+  onCloudUpdate: (data: {
+    settings?: StoreSettings;
+    transactions: Transaction[];
+    homeMaintenance?: HomeMaintenanceEntry[];
+    familyIncome?: FamilyIncomeEntry[];
+    fixedMonthly?: FixedMonthlyExpenseEntry[];
+  }) => void
 ) => {
   const code = (syncCode || 'AYESHA-STORE-01').trim().toUpperCase();
   if (typeof window === 'undefined' || !('EventSource' in window)) return () => {};
@@ -240,6 +290,9 @@ export const subscribeCloudSSE = (
           onCloudUpdate({
             settings: data.settings,
             transactions: data.transactions,
+            homeMaintenance: data.homeMaintenance,
+            familyIncome: data.familyIncome,
+            fixedMonthly: data.fixedMonthly,
           });
         }
       } catch (err) {

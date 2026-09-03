@@ -16,33 +16,44 @@ import {
   Briefcase,
   Building,
   UserCheck,
+  CalendarCheck,
 } from 'lucide-react';
 import { useCashFlow } from '../../context/CashFlowContext';
 import { formatCurrency, getTodayDateString, formatDateDisplay } from '../../utils/calculations';
-import type { HomeMaintenanceEntry, FamilyIncomeEntry } from '../../types';
+import type { HomeMaintenanceEntry, FamilyIncomeEntry, FixedMonthlyExpenseEntry } from '../../types';
 
 export const HomeFamilyScreen: React.FC = () => {
   const {
     homeMaintenanceList,
     familyIncomeList,
+    fixedMonthlyList,
     addHomeMaintenance,
     deleteHomeMaintenance,
     addFamilyIncome,
     deleteFamilyIncome,
+    addFixedMonthlyExpense,
+    deleteFixedMonthlyExpense,
     settings,
   } = useCashFlow();
 
-  const [activeTab, setActiveTab] = useState<'maintenance' | 'earnings'>('maintenance');
+  const [activeTab, setActiveTab] = useState<'maintenance' | 'fixed_monthly' | 'earnings'>('maintenance');
 
   // Modals
   const [isMaintenanceModalOpen, setIsMaintenanceModalOpen] = useState(false);
   const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
+  const [isFixedModalOpen, setIsFixedModalOpen] = useState(false);
 
-  // Maintenance Form State
+  // Daily Maintenance Form State
   const [mCategory, setMCategory] = useState<HomeMaintenanceEntry['category']>('Groceries & Milk');
   const [mAmount, setMAmount] = useState<string>('');
   const [mNotes, setMNotes] = useState<string>('');
   const [mDate, setMDate] = useState<string>(getTodayDateString());
+
+  // Fixed Monthly Commitment Form State
+  const [fTitle, setFTitle] = useState<string>('');
+  const [fAmount, setFAmount] = useState<string>('');
+  const [fCategory, setFCategory] = useState<NonNullable<FixedMonthlyExpenseEntry['category']>>('Maid / Domestic');
+  const [fNotes, setFNotes] = useState<string>('');
 
   // Family Income Form State
   const [iMember, setIMember] = useState<FamilyIncomeEntry['memberName']>('Father');
@@ -51,7 +62,9 @@ export const HomeFamilyScreen: React.FC = () => {
   const [iNotes, setINotes] = useState<string>('');
   const [iDate, setIDate] = useState<string>(getTodayDateString());
 
+  // Daily Maintenance Spent (Only daily usage goods, NOT fixed monthly Commitments)
   const totalMaintenanceSpent = homeMaintenanceList.reduce((sum, item) => sum + item.amount, 0);
+  const totalFixedMonthlyRequired = fixedMonthlyList.reduce((sum, item) => sum + item.amount, 0);
   const totalFamilyIncome = familyIncomeList.reduce((sum, item) => sum + item.amount, 0);
 
   const handleMaintenanceSubmit = (e: React.FormEvent) => {
@@ -70,6 +83,24 @@ export const HomeFamilyScreen: React.FC = () => {
     setMAmount('');
     setMNotes('');
     setIsMaintenanceModalOpen(false);
+  };
+
+  const handleFixedSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const numAmount = parseFloat(fAmount);
+    if (isNaN(numAmount) || numAmount <= 0 || !fTitle.trim()) return;
+
+    addFixedMonthlyExpense({
+      title: fTitle.trim(),
+      amount: numAmount,
+      category: fCategory,
+      notes: fNotes.trim() || undefined,
+    });
+
+    setFTitle('');
+    setFAmount('');
+    setFNotes('');
+    setIsFixedModalOpen(false);
   };
 
   const handleIncomeSubmit = (e: React.FormEvent) => {
@@ -102,70 +133,98 @@ export const HomeFamilyScreen: React.FC = () => {
               <Home className="w-5 h-5" />
             </div>
             <div className="min-w-0">
-              <h2 className="font-extrabold text-sm sm:text-base text-white truncate">Home Maintenance & Family Earnings</h2>
-              <p className="text-[11px] text-indigo-200 truncate">Track daily household usage & family member contributions</p>
+              <h2 className="font-extrabold text-sm sm:text-base text-white truncate">Home Expenses & Family Manager</h2>
+              <p className="text-[11px] text-indigo-200 truncate">Daily goods usage, fixed monthly commitments & family earnings</p>
             </div>
           </div>
 
-          {/* Action Buttons Grid (2-Column Mobile Layout) */}
-          <div className="grid grid-cols-2 gap-2 w-full pt-1">
+          {/* Action Buttons Grid (3-Column Mobile Fit) */}
+          <div className="grid grid-cols-3 gap-2 w-full pt-1">
             <button
               onClick={() => setIsMaintenanceModalOpen(true)}
-              className="py-2.5 px-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold text-xs shadow-md cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-1 min-w-0"
+              className="py-2.5 px-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold text-[11px] shadow-md cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-1 min-w-0"
             >
               <PlusCircle className="w-3.5 h-3.5 shrink-0" />
-              <span className="truncate">+ Maintenance</span>
+              <span className="truncate">+ Daily Use</span>
+            </button>
+            <button
+              onClick={() => setIsFixedModalOpen(true)}
+              className="py-2.5 px-1.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-500 hover:from-amber-500 hover:to-orange-400 text-white font-extrabold text-[11px] shadow-md cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-1 min-w-0"
+            >
+              <PlusCircle className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">+ Fixed (Maid/Rent)</span>
             </button>
             <button
               onClick={() => setIsIncomeModalOpen(true)}
-              className="py-2.5 px-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-500 hover:from-purple-500 hover:to-indigo-400 text-white font-extrabold text-xs shadow-md cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-1 min-w-0"
+              className="py-2.5 px-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-500 hover:from-purple-500 hover:to-indigo-400 text-white font-extrabold text-[11px] shadow-md cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-1 min-w-0"
             >
               <PlusCircle className="w-3.5 h-3.5 shrink-0" />
-              <span className="truncate">+ Family Income</span>
+              <span className="truncate">+ Income</span>
             </button>
           </div>
         </div>
 
-        {/* 2-Column Summary Cards */}
-        <div className="grid grid-cols-2 gap-2.5 pt-1">
-          <div className="p-3 bg-slate-800/80 rounded-2xl border border-slate-700/80 space-y-1 min-w-0">
-            <span className="text-[10px] font-extrabold text-indigo-300 uppercase tracking-wider block truncate">
-              Maintenance Spent
+        {/* 3-Column Summary Cards */}
+        <div className="grid grid-cols-3 gap-2 pt-1">
+          <div className="p-2.5 bg-slate-800/80 rounded-2xl border border-slate-700/80 space-y-1 min-w-0">
+            <span className="text-[9px] font-extrabold text-emerald-300 uppercase tracking-wider block truncate">
+              Daily Goods Spent
             </span>
-            <div className="text-xl sm:text-2xl font-black text-emerald-400 font-mono truncate">
+            <div className="text-base sm:text-xl font-black text-emerald-400 font-mono truncate">
               {formatCurrency(totalMaintenanceSpent, settings.currency)}
             </div>
-            <span className="text-[10px] text-slate-400 block truncate">{homeMaintenanceList.length} items logged</span>
+            <span className="text-[9px] text-slate-400 block truncate">{homeMaintenanceList.length} daily items</span>
           </div>
 
-          <div className="p-3 bg-slate-800/80 rounded-2xl border border-slate-700/80 space-y-1 min-w-0">
-            <span className="text-[10px] font-extrabold text-purple-300 uppercase tracking-wider block truncate">
+          <div className="p-2.5 bg-slate-800/80 rounded-2xl border border-slate-700/80 space-y-1 min-w-0">
+            <span className="text-[9px] font-extrabold text-amber-300 uppercase tracking-wider block truncate">
+              Fixed Monthly Commitments
+            </span>
+            <div className="text-base sm:text-xl font-black text-amber-400 font-mono truncate">
+              {formatCurrency(totalFixedMonthlyRequired, settings.currency)}
+            </div>
+            <span className="text-[9px] text-slate-400 block truncate">{fixedMonthlyList.length} fixed items</span>
+          </div>
+
+          <div className="p-2.5 bg-slate-800/80 rounded-2xl border border-slate-700/80 space-y-1 min-w-0">
+            <span className="text-[9px] font-extrabold text-purple-300 uppercase tracking-wider block truncate">
               Family Earnings
             </span>
-            <div className="text-xl sm:text-2xl font-black text-purple-400 font-mono truncate">
+            <div className="text-base sm:text-xl font-black text-purple-400 font-mono truncate">
               {formatCurrency(totalFamilyIncome, settings.currency)}
             </div>
-            <span className="text-[10px] text-slate-400 block truncate">{familyIncomeList.length} income entries</span>
+            <span className="text-[9px] text-slate-400 block truncate">{familyIncomeList.length} earnings</span>
           </div>
         </div>
       </div>
 
       {/* Section Switcher Tabs */}
-      <div className="grid grid-cols-2 bg-slate-200 dark:bg-slate-800 p-1.5 rounded-2xl gap-1">
+      <div className="grid grid-cols-3 bg-slate-200 dark:bg-slate-800 p-1.5 rounded-2xl gap-1">
         <button
           onClick={() => setActiveTab('maintenance')}
-          className={`py-2 px-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1 min-w-0 ${
+          className={`py-2 px-1 rounded-xl text-[11px] font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1 min-w-0 ${
             activeTab === 'maintenance'
               ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-md'
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
           }`}
         >
           <Home className="w-3.5 h-3.5 shrink-0" />
-          <span className="truncate">Home Expenses (3D)</span>
+          <span className="truncate">Daily Goods (3D)</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('fixed_monthly')}
+          className={`py-2 px-1 rounded-xl text-[11px] font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1 min-w-0 ${
+            activeTab === 'fixed_monthly'
+              ? 'bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 shadow-md'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+          }`}
+        >
+          <CalendarCheck className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">Fixed Monthly Record</span>
         </button>
         <button
           onClick={() => setActiveTab('earnings')}
-          className={`py-2 px-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1 min-w-0 ${
+          className={`py-2 px-1 rounded-xl text-[11px] font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1 min-w-0 ${
             activeTab === 'earnings'
               ? 'bg-white dark:bg-slate-900 text-purple-600 dark:text-purple-400 shadow-md'
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
@@ -176,28 +235,28 @@ export const HomeFamilyScreen: React.FC = () => {
         </button>
       </div>
 
-      {/* TAB 1: HOME MAINTENANCE */}
+      {/* TAB 1: DAILY HOME USAGE & GOODS MAINTENANCE */}
       {activeTab === 'maintenance' && (
         <div className="space-y-4">
           {/* Header */}
           <div className="flex items-center justify-between px-1">
             <h3 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2">
               <Wrench className="w-4 h-4 text-emerald-500" />
-              Daily Usage & Maintenance ({homeMaintenanceList.length})
+              Daily Household Usage & Goods ({homeMaintenanceList.length})
             </h3>
             <button
               onClick={() => setIsMaintenanceModalOpen(true)}
               className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
             >
-              + Add Maintenance
+              + Add Daily Usage
             </button>
           </div>
 
           {homeMaintenanceList.length === 0 ? (
             <div className="py-8 text-center text-slate-400 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-2">
               <Home className="w-7 h-7 mx-auto text-slate-400" />
-              <p className="font-bold text-xs">No Maintenance Entries Recorded</p>
-              <p className="text-[11px] text-slate-400">Click "+ Maintenance" to add house repairs or utility expenses.</p>
+              <p className="font-bold text-xs">No Daily Home Entries Recorded</p>
+              <p className="text-[11px] text-slate-400">Click "+ Daily Use" to add daily groceries, milk or house usage goods.</p>
             </div>
           ) : (
             <>
@@ -228,7 +287,6 @@ export const HomeFamilyScreen: React.FC = () => {
                         };
 
                         return (
-                          /* Compact 3D Cubic Card */
                           <div
                             key={item.id}
                             className={`relative p-3 rounded-2xl bg-gradient-to-br ${getCategoryStyle(
@@ -272,7 +330,7 @@ export const HomeFamilyScreen: React.FC = () => {
               {homeMaintenanceList.filter((item) => item.amount <= 1000).length > 0 && (
                 <div className="bg-white dark:bg-slate-900 rounded-2xl p-3 shadow-md border border-slate-200 dark:border-slate-800 space-y-2">
                   <span className="text-[10px] uppercase font-black text-slate-400 block pb-1 border-b border-slate-100 dark:border-slate-800">
-                    📋 Regular Maintenance Records (≤ ₹1,000)
+                    📋 Regular Maintenance & Daily Goods (≤ ₹1,000)
                   </span>
 
                   <div className="divide-y divide-slate-100 dark:divide-slate-800/80">
@@ -316,7 +374,71 @@ export const HomeFamilyScreen: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 2: FAMILY MEMBER EARNINGS - CIRCLE CARDS */}
+      {/* TAB 2: FIXED MONTHLY REQUIREMENTS RECORD (MAID SALARY / MEEI, RENT, COMMITMENTS) */}
+      {activeTab === 'fixed_monthly' && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <div>
+              <h3 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                <CalendarCheck className="w-4 h-4 text-amber-500" />
+                Fixed Monthly Requirements ({fixedMonthlyList.length})
+              </h3>
+              <p className="text-[10px] text-slate-400">Fixed commitments required for the month (Maid salary, Rent, etc.) maintained separately</p>
+            </div>
+            <button
+              onClick={() => setIsFixedModalOpen(true)}
+              className="text-xs font-extrabold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer shrink-0"
+            >
+              + Add Fixed Record
+            </button>
+          </div>
+
+          {fixedMonthlyList.length === 0 ? (
+            <div className="py-8 text-center text-slate-400 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-2">
+              <CalendarCheck className="w-7 h-7 mx-auto text-amber-500" />
+              <p className="font-bold text-xs">No Fixed Monthly Requirements Added</p>
+              <p className="text-[11px] text-slate-400">Click "+ Fixed (Maid/Rent)" to add maid salary (meei), house rent, or fixed monthly commitments.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {fixedMonthlyList.map((item) => (
+                <div
+                  key={item.id}
+                  className="bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-amber-200/80 dark:border-amber-900/60 shadow-sm flex items-center justify-between gap-3"
+                >
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 text-[10px] font-extrabold">
+                        {item.category || 'Fixed Commitment'}
+                      </span>
+                      <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                        {item.title}
+                      </h4>
+                    </div>
+                    {item.notes && <p className="text-xs text-slate-500 dark:text-slate-400 italic">"{item.notes}"</p>}
+                    <span className="text-[10px] text-slate-400 block">Required Monthly Commitment</span>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-base font-black text-amber-600 dark:text-amber-400 font-mono">
+                      {formatCurrency(item.amount, settings.currency)}
+                    </span>
+                    <button
+                      onClick={() => deleteFixedMonthlyExpense(item.id)}
+                      className="p-1.5 text-slate-400 hover:text-rose-500 cursor-pointer"
+                      title="Delete Record"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB 3: FAMILY MEMBER EARNINGS - CIRCLE CARDS */}
       {activeTab === 'earnings' && (
         <div className="space-y-3">
           <div className="flex items-center justify-between px-1">
@@ -336,13 +458,11 @@ export const HomeFamilyScreen: React.FC = () => {
             <div className="py-8 text-center text-slate-400 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-2">
               <Users className="w-7 h-7 mx-auto text-slate-400" />
               <p className="font-bold text-xs">No Family Member Income Recorded</p>
-              <p className="text-[11px] text-slate-400">Click "+ Family Income" to log Father, Mother or Pension contribution.</p>
+              <p className="text-[11px] text-slate-400">Click "+ Income" to log Father, Mother or Pension contribution.</p>
             </div>
           ) : (
-            /* Circle Cards Grid - Clean 2-Column Mobile Fit */
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 justify-items-center">
               {familyIncomeList.map((item) => (
-                /* Compact Glossy 3D Circle Card */
                 <div
                   key={item.id}
                   className="w-28 h-28 rounded-full bg-gradient-to-br from-purple-900 via-slate-900 to-indigo-950 p-2.5 border-2 border-purple-400/60 shadow-lg shadow-purple-950/40 flex flex-col items-center justify-center text-center text-white relative group transition-all hover:scale-105 cursor-default overflow-hidden shrink-0"
@@ -373,13 +493,13 @@ export const HomeFamilyScreen: React.FC = () => {
         </div>
       )}
 
-      {/* MODAL 1: ADD HOME MAINTENANCE */}
+      {/* MODAL 1: ADD DAILY MAINTENANCE EXPENSE */}
       {isMaintenanceModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-sm rounded-3xl p-5 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
               <h4 className="font-extrabold text-sm flex items-center gap-2 text-slate-900 dark:text-white">
-                <Wrench className="w-4 h-4 text-emerald-500" /> Add Home Maintenance Expense
+                <Wrench className="w-4 h-4 text-emerald-500" /> Add Daily Goods & Usage Expense
               </h4>
               <button
                 onClick={() => setIsMaintenanceModalOpen(false)}
@@ -435,7 +555,7 @@ export const HomeFamilyScreen: React.FC = () => {
                   type="text"
                   value={mNotes}
                   onChange={(e) => setMNotes(e.target.value)}
-                  placeholder="e.g. Electrician fix, monthly milk bill"
+                  placeholder="e.g. Daily milk, electrician fix"
                   className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white"
                 />
               </div>
@@ -444,14 +564,93 @@ export const HomeFamilyScreen: React.FC = () => {
                 type="submit"
                 className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-extrabold text-xs rounded-xl shadow-lg flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
               >
-                <CheckCircle2 className="w-4 h-4" /> SAVE MAINTENANCE CARD
+                <CheckCircle2 className="w-4 h-4" /> SAVE DAILY GOODS USAGE
               </button>
             </form>
           </div>
         </div>
       )}
 
-      {/* MODAL 2: ADD FAMILY MEMBER INCOME */}
+      {/* MODAL 2: ADD FIXED MONTHLY REQUIREMENT (MAID / MEEI / RENT) */}
+      {isFixedModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-sm rounded-3xl p-5 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+              <h4 className="font-extrabold text-sm flex items-center gap-2 text-slate-900 dark:text-white">
+                <CalendarCheck className="w-4 h-4 text-amber-500" /> Add Fixed Monthly Commitment
+              </h4>
+              <button
+                onClick={() => setIsFixedModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleFixedSubmit} className="space-y-3.5">
+              <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Item Title / Name</label>
+                <input
+                  type="text"
+                  required
+                  value={fTitle}
+                  onChange={(e) => setFTitle(e.target.value)}
+                  placeholder="e.g. Maid Salary (Meei), House Rent"
+                  className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Category</label>
+                <select
+                  value={fCategory}
+                  onChange={(e) => setFCategory(e.target.value as any)}
+                  className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500"
+                >
+                  <option value="Maid / Domestic">Maid / Domestic (Meei)</option>
+                  <option value="House Rent">House Rent</option>
+                  <option value="Electricity & Water">Electricity & Water</option>
+                  <option value="School / College Fee">School / College Fee</option>
+                  <option value="Other Fixed Commitment">Other Fixed Commitment</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Required Amount ({settings.currency})</label>
+                <input
+                  type="number"
+                  step="any"
+                  required
+                  value={fAmount}
+                  onChange={(e) => setFAmount(e.target.value)}
+                  placeholder="e.g. 3000"
+                  className="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-lg font-black text-amber-600 dark:text-amber-400 focus:ring-2 focus:ring-amber-500 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Notes / Remarks</label>
+                <input
+                  type="text"
+                  value={fNotes}
+                  onChange={(e) => setFNotes(e.target.value)}
+                  placeholder="e.g. Paid on 5th of every month"
+                  className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3 bg-gradient-to-r from-amber-600 to-orange-500 text-white font-extrabold text-xs rounded-xl shadow-lg flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+              >
+                <CheckCircle2 className="w-4 h-4" /> SAVE FIXED REQUIREMENT RECORD
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 3: ADD FAMILY MEMBER INCOME */}
       {isIncomeModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-sm rounded-3xl p-5 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200">

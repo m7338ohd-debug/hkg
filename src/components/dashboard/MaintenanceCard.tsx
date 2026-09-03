@@ -15,90 +15,38 @@ import { formatCurrency, calculatePeriodSummary, filterTransactionsByDate, filte
 import type { WithdrawalPerson } from '../../types';
 
 export const MaintenanceCard: React.FC = () => {
-  const { transactions, homeMaintenanceList, settings, addTransaction } = useCashFlow();
+  const { transactions, homeMaintenanceList, settings, addTransaction, addHomeMaintenance } = useCashFlow();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Form State
   const [amount, setAmount] = useState('');
-  const [maintenanceType, setMaintenanceType] = useState<'Home Maintenance' | 'Electricity/Rent' | 'Family Draw' | 'Extra Savings'>('Home Maintenance');
-  const [person, setPerson] = useState<WithdrawalPerson | string>('Mother');
+  const [mCategory, setMCategory] = useState<HomeMaintenanceEntry['category']>('Groceries & Milk');
   const [notes, setNotes] = useState('');
 
   const todayStr = getTodayDateString();
-  const periodSummary = calculatePeriodSummary(transactions, settings);
 
-  // Calculate maintenance sum including homeMaintenanceList
-  const homeMaintenanceTotalToday = homeMaintenanceList
-    .filter((m) => m.date === todayStr)
-    .reduce((sum, item) => sum + item.amount, 0);
+  // Daily Maintenance Spent strictly from manually logged home maintenance items
+  const todayHomeMaintList = homeMaintenanceList.filter((m) => m.date === todayStr);
+  const todaySpent = todayHomeMaintList.reduce((sum, item) => sum + item.amount, 0);
 
-  const todaySpent = periodSummary.today.homeMaintenanceSpent + homeMaintenanceTotalToday;
+  const weeklyHomeMaintList = filterHomeMaintenanceByDate(homeMaintenanceList, 'this_week');
+  const monthlyHomeMaintList = filterHomeMaintenanceByDate(homeMaintenanceList, 'this_month');
 
-  // Calculate weekly & monthly maintenance spent
-  const weeklyTxs = filterTransactionsByDate(transactions, 'this_week');
-  const monthlyTxs = filterTransactionsByDate(transactions, 'this_month');
-
-  const weeklyHomeMaintenance = filterHomeMaintenanceByDate(homeMaintenanceList, 'this_week');
-  const monthlyHomeMaintenance = filterHomeMaintenanceByDate(homeMaintenanceList, 'this_month');
-
-  const calcMaintenanceSum = (txList: typeof transactions) => {
-    let sum = 0;
-    txList.forEach((t) => {
-      if (t.type === 'home_use' || t.type === 'withdrawal') {
-        sum += t.amount;
-      } else if (
-        t.type === 'expense' &&
-        t.category &&
-        (t.category.toLowerCase().includes('maintenance') ||
-          t.category.toLowerCase().includes('rent') ||
-          t.category.toLowerCase().includes('house') ||
-          t.category.toLowerCase().includes('home'))
-      ) {
-        sum += t.amount;
-      }
-    });
-    return sum;
-  };
-
-  const weeklyHomeMaintTotal = weeklyHomeMaintenance.reduce((sum, item) => sum + item.amount, 0);
-  const monthlyHomeMaintTotal = monthlyHomeMaintenance.reduce((sum, item) => sum + item.amount, 0);
-
-  const weeklySpent = calcMaintenanceSum(weeklyTxs) + weeklyHomeMaintTotal;
-  const monthlySpent = calcMaintenanceSum(monthlyTxs) + monthlyHomeMaintTotal;
+  const weeklySpent = weeklyHomeMaintList.reduce((sum, item) => sum + item.amount, 0);
+  const monthlySpent = monthlyHomeMaintList.reduce((sum, item) => sum + item.amount, 0);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount <= 0) return;
 
-    if (maintenanceType === 'Home Maintenance' || maintenanceType === 'Electricity/Rent') {
-      addTransaction({
-        type: 'expense',
-        amount: numAmount,
-        category: maintenanceType === 'Home Maintenance' ? 'Maintenance' : 'House Utility',
-        date: todayStr,
-        notes: notes.trim() || `${maintenanceType} expense logged`,
-      });
-    } else if (maintenanceType === 'Family Draw') {
-      addTransaction({
-        type: 'withdrawal',
-        amount: numAmount,
-        reason: 'House Expense',
-        takenBy: person,
-        date: todayStr,
-        notes: notes.trim() || `Cash withdrawal for home by ${person}`,
-      });
-    } else {
-      // Extra Savings
-      addTransaction({
-        type: 'withdrawal',
-        amount: numAmount,
-        reason: 'Extra Savings',
-        takenBy: 'Owner',
-        date: todayStr,
-        notes: notes.trim() || `Extra savings set aside from store cash flow`,
-      });
-    }
+    addHomeMaintenance({
+      date: todayStr,
+      category: mCategory,
+      amount: numAmount,
+      notes: notes.trim() || `${mCategory} daily home expense`,
+      addedBy: settings.activeUser || 'Owner',
+    });
 
     setAmount('');
     setNotes('');
@@ -215,16 +163,18 @@ export const MaintenanceCard: React.FC = () => {
 
             <form onSubmit={handleSubmit} className="space-y-3.5">
               <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Expense Type</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Category</label>
                 <select
-                  value={maintenanceType}
-                  onChange={(e) => setMaintenanceType(e.target.value as any)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold focus:ring-2 focus:ring-amber-500 cursor-pointer"
+                  value={mCategory}
+                  onChange={(e) => setMCategory(e.target.value as any)}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold focus:ring-2 focus:ring-amber-500 cursor-pointer text-slate-900 dark:text-white"
                 >
-                  <option value="Home Maintenance">Home Maintenance & Repairs</option>
-                  <option value="Electricity/Rent">House Utility (Rent / Electricity / Gas)</option>
-                  <option value="Family Draw">Family Cash Withdrawal</option>
-                  <option value="Extra Savings">Set Aside Extra Savings</option>
+                  <option value="Groceries & Milk">Groceries & Milk</option>
+                  <option value="Repairs & Fixes">Repairs & Fixes</option>
+                  <option value="Utility Bills">Utility Bills</option>
+                  <option value="Medical & Health">Medical & Health</option>
+                  <option value="General House">General House</option>
+                  <option value="Other">Other</option>
                 </select>
               </div>
 
@@ -243,31 +193,14 @@ export const MaintenanceCard: React.FC = () => {
                 />
               </div>
 
-              {maintenanceType === 'Family Draw' && (
-                <div>
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Taken By</label>
-                  <select
-                    value={person}
-                    onChange={(e) => setPerson(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:ring-2 focus:ring-amber-500 cursor-pointer"
-                  >
-                    <option value="Mother">Mother</option>
-                    <option value="Ayesha">Ayesha</option>
-                    <option value="Owner">Owner</option>
-                    <option value="Employee">Employee</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-              )}
-
               <div>
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Notes (Optional)</label>
                 <input
                   type="text"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="e.g. Plumber repair, LPG gas refill, home grocery"
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:ring-2 focus:ring-amber-500"
+                  placeholder="e.g. Daily milk, electrician fix, household goods"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:ring-2 focus:ring-amber-500 text-slate-900 dark:text-white"
                 />
               </div>
 

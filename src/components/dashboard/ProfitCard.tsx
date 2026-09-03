@@ -98,7 +98,7 @@ export const ProfitCard: React.FC = () => {
                 </span>
               ) : (
                 <span className="text-[9px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">
-                  Auto Calculated (2%)
+                  Auto Calculated (10%)
                 </span>
               )}
             </h3>
@@ -136,7 +136,7 @@ export const ProfitCard: React.FC = () => {
           ) : (
             <p className="text-[10px] text-slate-400">
               {today.isManualProfit
-                ? `Auto-calc was ${formatCurrency(today.autoProfit, settings.currency)} (sales 2%)`
+                ? `Auto-calc was ${formatCurrency(today.autoProfit, settings.currency)} (sales 10%)`
                 : `Calculated automatically from total sales (${formatCurrency(today.totalSales, settings.currency)})`}
             </p>
           )}
@@ -264,7 +264,7 @@ export const ProfitCard: React.FC = () => {
                     className="w-full px-3.5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-lg font-black text-emerald-600 dark:text-emerald-400 focus:ring-2 focus:ring-emerald-500 font-mono"
                   />
                   <p className="text-[10px] text-slate-400 mt-1">
-                    Auto-calculated 2% profit is {formatCurrency(today.autoProfit, settings.currency)}.
+                    Auto-calculated 10% profit is {formatCurrency(today.autoProfit, settings.currency)}.
                   </p>
                 </div>
               )}

@@ -181,7 +181,7 @@ export const ReportsScreen: React.FC = () => {
 
             <div className="bg-emerald-600 text-white p-4 rounded-2xl space-y-1">
               <div className="flex justify-between items-center text-xs">
-                <span className="text-emerald-100 uppercase font-bold">2% Daily Net Investor Profit</span>
+                <span className="text-emerald-100 uppercase font-bold">10% Daily Net Investor Profit</span>
                 <span className="text-lg font-black">{formatCurrency(today.profit, settings.currency)}</span>
               </div>
               <div className="flex justify-between items-center text-xs pt-1 border-t border-emerald-500">

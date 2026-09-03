@@ -228,26 +228,8 @@ export const HistoryScreen: React.FC = () => {
 
   return (
     <div className="w-full max-w-7xl mx-auto p-3 sm:p-6 pb-28 space-y-4 sm:space-y-6 overflow-x-hidden">
-      {/* Top Overview Cards Banner (Profit, Sales & Home Maintenance Spent) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {/* Profit Card */}
-        <div className="bg-gradient-to-br from-emerald-600 to-teal-700 rounded-3xl p-4 text-white shadow-lg relative overflow-hidden">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-100">
-              Period Profit
-            </span>
-            <span className="p-1.5 rounded-xl bg-white/20 text-white">
-              <TrendingUp className="w-4 h-4" />
-            </span>
-          </div>
-          <div className="text-2xl font-black mt-2 tracking-tight">
-            {formatCurrency(stats.totalProfit, settings.currency)}
-          </div>
-          <p className="text-[10px] text-emerald-100 mt-1">
-            2% Cash Sales Margin + Manual Purchase Profit
-          </p>
-        </div>
-
+      {/* Top Overview Cards Banner (Sales & Home Maintenance Spent) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {/* Store Sales Card */}
         <div className="bg-white dark:bg-slate-800 rounded-3xl p-4 border border-slate-200 dark:border-slate-700 shadow-xs">
           <div className="flex items-center justify-between">

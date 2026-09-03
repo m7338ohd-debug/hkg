@@ -184,7 +184,7 @@ export const calculateSummary = (
           currency: '₹',
           openingCash: settingsOrOpeningCash,
           investedAmount: 25000,
-          profitRate: 2,
+          profitRate: 10,
           storeSyncCode: 'AYESHA-STORE-01',
           darkMode: true,
           autoBackupReminder: true,
@@ -193,10 +193,10 @@ export const calculateSummary = (
 
   const openingCash = settings.openingCash;
   const investedAmount = settings.investedAmount || 25000;
-  const profitRate = settings.profitRate || 2;
+  const profitRate = settings.profitRate || 10;
 
   const dateToUse = targetDate || getTodayDateString();
-  const filtered = targetDate ? transactions.filter((t) => t.date === targetDate) : transactions;
+  const filtered = transactions.filter((t) => t.date === dateToUse);
 
   let cashSales = 0;
   let creditSales = 0;
@@ -255,7 +255,7 @@ export const calculateSummary = (
   // Total Sales includes Cash Sales, Udhar Given, and Home Use entries
   const totalSales = cashSales + creditSales + homeUseSales;
   
-  // Auto-calculated Profit is 2% of Total Sales
+  // Auto-calculated Profit is 10% of Total Sales
   const autoProfit = totalSales * (profitRate / 100);
   
   // Check if manual profit has been set for target date
@@ -305,7 +305,7 @@ export const calculateSummary = (
 
 export const calculatePeriodSummary = (transactions: Transaction[], settings: StoreSettings) => {
   const todaySummary = calculateSummary(transactions, settings, getTodayDateString());
-  const profitRate = settings.profitRate || 2;
+  const profitRate = settings.profitRate || 10;
 
   const weeklyTxs = filterTransactionsByDate(transactions, 'this_week');
   let weeklyCashSales = 0;
@@ -471,7 +471,7 @@ export const getChartData = (transactions: Transaction[], days = 7) => {
 export interface StoreLLMProfitMetrics {
   cashSales: number;
   cashSalesProfitRate: number;
-  cashSalesProfit: number; // 2% of daily cash sales
+  cashSalesProfit: number; // 10% of daily cash sales
   manualPurchaseProfit: number; // Manually added purchase profit
   totalProfit: number; // cashSalesProfit + manualPurchaseProfit
   averageProfit: number; // (cashSalesProfit + manualPurchaseProfit) / 2 -> My One Day Earning
@@ -480,13 +480,13 @@ export interface StoreLLMProfitMetrics {
 
 export const calculateStoreLLMProfitMetrics = (
   cashSales: number,
-  profitRate = 2,
+  profitRate = 10,
   manualPurchaseProfit = 0
 ): StoreLLMProfitMetrics => {
   const cashSalesProfit = (cashSales * profitRate) / 100;
   const safePurchaseProfit = Math.max(0, manualPurchaseProfit);
   const totalProfit = cashSalesProfit + safePurchaseProfit;
-  // User Rule: Divide by 2 ONLY when purchase profit > 0 is added! If not, net profit is 100% of 2% sales profit!
+  // User Rule: Divide by 2 ONLY when purchase profit > 0 is added! If not, net profit is 100% of 10% sales profit!
   const averageProfit = safePurchaseProfit > 0 ? (cashSalesProfit + safePurchaseProfit) / 2 : cashSalesProfit;
   const blendedProfitMargin = cashSales > 0 ? (averageProfit / cashSales) * 100 : profitRate;
 

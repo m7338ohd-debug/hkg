@@ -184,7 +184,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab, 
 
           <div className="grid grid-cols-2 gap-2 pt-3 border-t sm:border-t-0 border-slate-800/80 w-full">
             <div className="bg-slate-950/60 p-2.5 rounded-2xl border border-emerald-500/20 text-left min-w-0">
-              <span className="text-[10px] text-emerald-400 uppercase font-extrabold block truncate">2% Daily Net Profit</span>
+              <span className="text-[10px] text-emerald-400 uppercase font-extrabold block truncate">10% Daily Net Profit</span>
               <div className="text-lg font-black text-emerald-400 font-mono mt-0.5 truncate">
                 {formatCurrency(today.profit, settings.currency)}
               </div>
@@ -211,7 +211,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab, 
       {/* Home Maintenance & Family Draw Expense Card */}
       <MaintenanceCard />
 
-      {/* Grocery Investment Cycle & 2% Daily Profit Flow Card */}
+      {/* Grocery Investment Cycle & 10% Daily Profit Flow Card */}
       <div className="bg-gradient-to-br from-emerald-900/40 via-slate-900 to-slate-900 rounded-3xl p-5 shadow-xl border border-emerald-500/20 text-white space-y-3.5">
         <div className="flex items-center justify-between pb-2 border-b border-slate-800">
           <div className="flex items-center gap-2">
@@ -220,14 +220,14 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab, 
             </div>
             <div>
               <h3 className="font-extrabold text-sm text-white">
-                Grocery Re-Investment & 2% Profit Cycle
+                Grocery Re-Investment & 10% Profit Cycle
               </h3>
-              <p className="text-[11px] text-slate-400">Invest Capital ➔ Buy Stock ➔ Sell Goods ➔ Earn 2% Profit ➔ Re-invest</p>
+              <p className="text-[11px] text-slate-400">Invest Capital ➔ Buy Stock ➔ Sell Goods ➔ Earn 10% Profit ➔ Re-invest</p>
             </div>
           </div>
 
           <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 font-extrabold text-[10px] uppercase">
-            2% Earn Rate
+            10% Earn Rate
           </span>
         </div>
 
@@ -258,7 +258,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab, 
           </div>
 
           <div className="p-3 bg-emerald-950/80 rounded-2xl border border-emerald-500/40">
-            <span className="text-[9px] uppercase font-extrabold text-emerald-400 block">4. Net 2% Profit</span>
+            <span className="text-[9px] uppercase font-extrabold text-emerald-400 block">4. Net 10% Profit</span>
             <span className="text-sm font-black text-emerald-400 block mt-0.5">
               {formatCurrency(today.profit, settings.currency)}
             </span>
