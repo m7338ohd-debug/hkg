@@ -30,12 +30,22 @@ export const CalculatorScreen: React.FC = () => {
     }
   });
 
+  const sanitizeExpression = (expr: string): string => {
+    if (!expr) return '';
+    // Remove trailing operators
+    let cleaned = expr.replace(/[+\-*/]+$/, '');
+    // Strip octal-inducing leading zeros from integer tokens (e.g. "020" -> "20", "10+05" -> "10+5", "-4*020" -> "-4*20")
+    // Keeps valid decimal numbers like "0.20" intact.
+    cleaned = cleaned.replace(/(^|[\+\-\*/\(])0+(?=\d)/g, '$1');
+    return cleaned;
+  };
+
   const calculateResult = (expr: string): number => {
     if (!expr) return 0;
     try {
-      const cleaned = expr.replace(/[+\-*/]+$/, '');
+      const cleaned = sanitizeExpression(expr);
       if (!cleaned) return 0;
-      const evalFunc = new Function(`return (${cleaned})`);
+      const evalFunc = new Function(`'use strict'; return (${cleaned})`);
       const res = evalFunc();
       return typeof res === 'number' && !isNaN(res) && isFinite(res) ? Math.max(0, res) : 0;
     } catch {
@@ -50,7 +60,7 @@ export const CalculatorScreen: React.FC = () => {
       if (['+', '-', '*', '/'].includes(val)) {
         setExpression(currentTotal.toString() + val);
       } else {
-        setExpression(val);
+        setExpression(val === '.' ? '0.' : val);
       }
       setIsCalculated(false);
       return;
@@ -60,6 +70,26 @@ export const CalculatorScreen: React.FC = () => {
     if (['+', '-', '*', '/'].includes(lastChar) && ['+', '-', '*', '/'].includes(val)) {
       setExpression(expression.slice(0, -1) + val);
       return;
+    }
+
+    // Handle leading zero in numbers (e.g. typing "0" then "2" becomes "2", not "02")
+    const isEndingWithSoloZero = expression === '0' || /(^|[\+\-\*/])0$/.test(expression);
+    if (isEndingWithSoloZero) {
+      if (val === '0') return; // Prevent "00"
+      if (/[1-9]/.test(val)) {
+        setExpression(expression.slice(0, -1) + val);
+        return;
+      }
+    }
+
+    // Prevent duplicate decimal points in the same number token
+    if (val === '.') {
+      const lastNumberSegment = expression.split(/[\+\-\*/]/).pop() || '';
+      if (lastNumberSegment.includes('.')) return;
+      if (!lastNumberSegment) {
+        setExpression((prev) => prev + '0.');
+        return;
+      }
     }
 
     setExpression((prev) => prev + val);

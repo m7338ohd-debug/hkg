@@ -21,6 +21,7 @@ import {
   mergeTransactions,
   mergeHomeMaintenance,
   mergeFamilyIncome,
+  mergeFixedMonthly,
 } from '../db/cloudSync';
 
 interface ToastMessage {
@@ -39,6 +40,7 @@ interface CashFlowContextType {
   fixedMonthlyList: FixedMonthlyExpenseEntry[];
   toast: ToastMessage | null;
   isSyncing: boolean;
+  syncNow: () => Promise<void>;
   showToast: (title: string, message?: string, type?: 'success' | 'error' | 'info', undoable?: boolean) => void;
   hideToast: () => void;
   addTransaction: (tx: Omit<Transaction, 'id' | 'createdAt'>) => Transaction;
@@ -690,7 +692,7 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     showToast(
       'SMS OTP Delivered!',
-      `Your Provision Store verification code is: ${generatedOTP}`,
+      `Your Provision Store verification code for +91 ${cleanPhone} is: ${generatedOTP}`,
       'info'
     );
     return generatedOTP;

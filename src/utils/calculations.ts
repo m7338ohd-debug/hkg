@@ -264,6 +264,7 @@ export const calculateSummary = (
 
   let manualProfitVal: number | undefined = undefined;
   let manualProfitNotesVal: string | undefined = undefined;
+  let manualProfitModeVal: 'addon' | 'override' | undefined = undefined;
 
   let profit = autoProfit;
 
@@ -271,6 +272,7 @@ export const calculateSummary = (
     if (typeof rawProfitVal === 'object' && rawProfitVal !== null) {
       manualProfitVal = rawProfitVal.amount;
       manualProfitNotesVal = rawProfitVal.notes;
+      manualProfitModeVal = rawProfitVal.mode;
     } else if (typeof rawProfitVal === 'number') {
       manualProfitVal = rawProfitVal;
     }
