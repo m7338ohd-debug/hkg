@@ -1,18 +1,13 @@
 import React, { useState, useRef } from 'react';
 import {
   Store,
-  User,
-  DollarSign,
-  Wallet,
   Moon,
   Sun,
   Download,
   Upload,
   RefreshCw,
   Trash2,
-  CheckCircle2,
   Database,
-  FileJson,
   ShieldCheck,
   Sparkles,
   Smartphone,
@@ -21,12 +16,10 @@ import {
   Radio,
   Zap,
   Copy,
-  Check,
 } from 'lucide-react';
 import { useCashFlow } from '../../context/CashFlowContext';
 import { exportDataJSON, SAMPLE_TRANSACTIONS } from '../../db/storage';
 import { generateShortConnectionCode } from '../../db/cloudSync';
-import { formatCurrency } from '../../utils/calculations';
 import { usePWAInstall } from '../../hooks/usePWAInstall';
 
 interface SettingsScreenProps {
