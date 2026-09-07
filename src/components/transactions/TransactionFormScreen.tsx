@@ -70,10 +70,9 @@ export const TransactionFormScreen: React.FC<TransactionFormScreenProps> = ({
     (c) => customerName && c.customerName.toLowerCase().includes(customerName.toLowerCase())
   );
 
-  const handleSelectCustomer = (name: string, custPhone?: string, balance?: number) => {
+  const handleSelectCustomer = (name: string, custPhone?: string) => {
     setCustomerName(name);
     if (custPhone) setPhone(custPhone);
-    if (balance && type === 'credit_payment') setAmount(balance.toString());
   };
 
   const handleQuickReceiveRow = (name: string, custPhone?: string, dueAmount?: number) => {

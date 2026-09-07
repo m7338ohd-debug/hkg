@@ -55,7 +55,7 @@ interface CashFlowContextType {
   resetPeriodData: (period: 'weekly' | 'monthly' | 'all') => void;
   importBackup: (jsonStr: string) => { success: boolean; message: string };
   toggleDarkMode: () => void;
-  setManualDailyProfit: (date: string, amount?: number, notes?: string, mode?: 'addon' | 'override') => void;
+  setManualDailyProfit: (date: string, amount?: number, notes?: string) => void;
   loginStore: (syncCode: string, userName: string) => Promise<boolean>;
   registerStoreAccount: (params: {
     storeName: string;
@@ -405,7 +405,7 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       // Calculate Customer's updated balance
       let currentBalance = 0;
       updated.forEach((t) => {
-        if (t.customerName && t.customerName.toLowerCase() === custName.toLowerCase()) {
+        if (t.customerName && t.customerName.trim().toLowerCase() === custName.trim().toLowerCase()) {
           if (t.type === 'credit_sale') currentBalance += t.amount;
           else if (t.type === 'credit_payment') currentBalance -= t.amount;
         }
@@ -591,12 +591,7 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return res;
   };
 
-  const setManualDailyProfit = (
-    date: string,
-    amount?: number,
-    notes?: string,
-    mode: 'addon' | 'override' = 'addon'
-  ) => {
+  const setManualDailyProfit = (date: string, amount?: number, notes?: string) => {
     const updatedProfits = { ...(settings.manualDailyProfits || {}) };
 
     if (amount === undefined || amount === null) {
@@ -608,14 +603,11 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     updatedProfits[date] = {
       amount,
-      addOn: mode === 'addon' ? amount : undefined,
-      mode,
       notes: notes?.trim() || undefined,
     };
 
     updateSettings({ manualDailyProfits: updatedProfits });
-    const modeText = mode === 'addon' ? 'Add-on Profit' : 'Total Profit Override';
-    showToast('Daily Profit Updated', `${settings.currency}${amount} (${modeText}) set for ${date}`);
+    showToast('Manual Profit Saved', `${settings.currency}${amount} set as manual daily profit for ${date}`);
   };
 
   const loginStore = async (syncCode: string, userName: string): Promise<boolean> => {

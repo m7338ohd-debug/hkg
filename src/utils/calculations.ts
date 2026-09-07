@@ -264,27 +264,18 @@ export const calculateSummary = (
 
   let manualProfitVal: number | undefined = undefined;
   let manualProfitNotesVal: string | undefined = undefined;
-  let manualProfitModeVal: 'addon' | 'override' | undefined = undefined;
 
   let profit = autoProfit;
 
   if (isManualProfit) {
     if (typeof rawProfitVal === 'object' && rawProfitVal !== null) {
+      manualProfitVal = rawProfitVal.amount;
       manualProfitNotesVal = rawProfitVal.notes;
-      manualProfitModeVal = rawProfitVal.mode || (rawProfitVal.addOn !== undefined ? 'addon' : 'override');
-      
-      if (manualProfitModeVal === 'addon' || rawProfitVal.addOn !== undefined) {
-        const addOnVal = rawProfitVal.addOn ?? rawProfitVal.amount ?? 0;
-        manualProfitVal = addOnVal;
-        profit = autoProfit + addOnVal;
-      } else {
-        manualProfitVal = rawProfitVal.amount;
-        profit = rawProfitVal.amount;
-      }
     } else if (typeof rawProfitVal === 'number') {
       manualProfitVal = rawProfitVal;
-      manualProfitModeVal = 'addon';
-      profit = autoProfit + rawProfitVal;
+    }
+    if (manualProfitVal !== undefined) {
+      profit = manualProfitVal;
     }
   }
 

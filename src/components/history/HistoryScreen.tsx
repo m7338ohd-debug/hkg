@@ -266,7 +266,7 @@ export const HistoryScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* History Report Generation Options Bar (Daily, Weekly, Customized) */}
+      {/* History Report Generation Options Bar (Daily & Weekly Reports) */}
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-3xl p-4 shadow-lg border border-indigo-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <div className="p-2 bg-indigo-500/20 text-indigo-400 rounded-xl border border-indigo-500/30">
@@ -274,28 +274,22 @@ export const HistoryScreen: React.FC = () => {
           </div>
           <div>
             <h4 className="font-extrabold text-xs text-white">Generate History Financial Reports</h4>
-            <p className="text-[10px] text-slate-300">Generate PDF or WhatsApp/SMS reports for Daily, Weekly or Custom Range</p>
+            <p className="text-[10px] text-slate-300">Export PDF or share WhatsApp/SMS financial reports</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto shrink-0">
+        <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
           <button
             onClick={() => setReportModalPeriod('daily')}
-            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center gap-1 shadow-md cursor-pointer transition-all active:scale-95"
+            className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md cursor-pointer transition-all active:scale-95"
           >
-            <Calendar className="w-3.5 h-3.5" /> Daily Report
+            <Calendar className="w-4 h-4" /> Daily Report
           </button>
           <button
             onClick={() => setReportModalPeriod('weekly')}
-            className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs flex items-center gap-1 shadow-md cursor-pointer transition-all active:scale-95"
+            className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md cursor-pointer transition-all active:scale-95"
           >
-            <Clock className="w-3.5 h-3.5" /> Weekly Report
-          </button>
-          <button
-            onClick={() => setReportModalPeriod('custom')}
-            className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs flex items-center gap-1 shadow-md cursor-pointer transition-all active:scale-95"
-          >
-            <Tag className="w-3.5 h-3.5" /> Custom Report
+            <Clock className="w-4 h-4" /> Weekly Report
           </button>
         </div>
       </div>
