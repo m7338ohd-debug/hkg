@@ -1,10 +1,11 @@
 import type { Transaction, StoreSettings, DailySummary, CustomerCreditSummary, HomeMaintenanceEntry, FamilyIncomeEntry } from '../types';
 
 export const formatCurrency = (amount: number, symbol = '₹'): string => {
+  const safeAmount = typeof amount === 'number' && !isNaN(amount) && isFinite(amount) ? amount : 0;
   const formatted = new Intl.NumberFormat('en-IN', {
     maximumFractionDigits: 2,
     minimumFractionDigits: 0,
-  }).format(amount);
+  }).format(safeAmount);
   return `${symbol}${formatted}`;
 };
 

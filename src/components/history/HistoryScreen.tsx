@@ -13,27 +13,22 @@ import {
   X,
   Mic,
   Home,
-  TrendingUp,
-  PieChart,
   Clock,
-  DollarSign,
-  Wrench,
   Calendar,
   Layers,
-  Tag,
-  User,
   HeartPulse,
   ShoppingBag,
   Download,
-  Share2,
   FileText,
   Send,
   MessageSquare,
   Copy,
   Check,
+  Wrench,
+  PieChart,
 } from 'lucide-react';
 import { useCashFlow } from '../../context/CashFlowContext';
-import type { Transaction, TransactionType, HomeMaintenanceEntry } from '../../types';
+import type { Transaction, TransactionType } from '../../types';
 import { formatCurrency, formatDateDisplay, filterTransactionsByDate, calculateSummary, calculatePeriodSummary } from '../../utils/calculations';
 import { exportReportToPDF, generateTextReport } from '../../utils/pdfExport';
 import { useSpeechToText } from '../../utils/useSpeech';
@@ -839,14 +834,13 @@ export const HistoryScreen: React.FC = () => {
                   <p className="text-[11px] text-slate-500">Owner: {settings.ownerName}</p>
                 </div>
                 <span className="text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300">
-                  {reportModalPeriod.toUpperCase()} REPORT
+                  {reportModalPeriod.toUpperCase()} ({reportModalPeriod === 'daily' ? 'Today' : reportModalPeriod === 'weekly' ? 'This Week' : 'Filtered Selection'})
                 </span>
               </div>
 
               {(() => {
                 const summary = calculatePeriodSummary(transactions, settings);
-                const periodLabel = reportModalPeriod === 'daily' ? 'Today' : reportModalPeriod === 'weekly' ? 'This Week' : 'Filtered Selection';
-                const s = reportModalPeriod === 'daily' ? summary.today : reportModalPeriod === 'weekly' ? summary.weekly : {
+                const s: any = reportModalPeriod === 'daily' ? summary.today : reportModalPeriod === 'weekly' ? summary.weekly : {
                   totalSales: stats.totalSales,
                   cashSales: stats.totalCashSales,
                   profit: stats.totalProfit,

@@ -64,7 +64,97 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   createdAccountDate: new Date().toISOString().split('T')[0],
 };
 
-export const SAMPLE_TRANSACTIONS: Transaction[] = [];
+const getTodayString = (offsetDays = 0) => {
+  const d = new Date();
+  d.setDate(d.getDate() - offsetDays);
+  return d.toISOString().split('T')[0];
+};
+
+export const SAMPLE_TRANSACTIONS: Transaction[] = [
+  {
+    id: 'tx_sample_1',
+    type: 'cash_sale',
+    amount: 1450,
+    date: getTodayString(0),
+    time: '09:30 AM',
+    paymentMethod: 'Cash',
+    notes: 'Morning Provisions & Oil Sale',
+    createdAt: Date.now() - 3600000 * 5,
+  },
+  {
+    id: 'tx_sample_2',
+    type: 'credit_sale',
+    amount: 650,
+    customerName: 'Ramesh Kumar',
+    phone: '9876543210',
+    date: getTodayString(0),
+    time: '11:15 AM',
+    notes: 'Monthly Rice 5kg & Sugar Udhar',
+    createdAt: Date.now() - 3600000 * 3,
+  },
+  {
+    id: 'tx_sample_3',
+    type: 'cash_sale',
+    amount: 2200,
+    date: getTodayString(0),
+    time: '02:40 PM',
+    paymentMethod: 'UPI',
+    notes: 'UPI Scanner Payment - Groceries',
+    createdAt: Date.now() - 3600000 * 2,
+  },
+  {
+    id: 'tx_sample_4',
+    type: 'credit_payment',
+    amount: 400,
+    customerName: 'Ramesh Kumar',
+    phone: '9876543210',
+    date: getTodayString(0),
+    time: '04:20 PM',
+    paymentMethod: 'Cash',
+    notes: 'Partial Udhar Collected from Ramesh',
+    createdAt: Date.now() - 3600000 * 1,
+  },
+  {
+    id: 'tx_sample_5',
+    type: 'home_use',
+    amount: 230,
+    date: getTodayString(0),
+    time: '06:10 PM',
+    notes: 'Took Tea Powder & Milk packet for home',
+    createdAt: Date.now() - 1800000,
+  },
+  {
+    id: 'tx_sample_6',
+    type: 'purchase',
+    amount: 3200,
+    category: 'Groceries',
+    date: getTodayString(1),
+    time: '10:00 AM',
+    notes: 'Wholesale Rice & Dal Stock Purchase',
+    createdAt: Date.now() - 86400000,
+  },
+  {
+    id: 'tx_sample_7',
+    type: 'expense',
+    amount: 450,
+    category: 'Electricity',
+    date: getTodayString(1),
+    time: '03:00 PM',
+    notes: 'Store Freezer Electricity Bill',
+    createdAt: Date.now() - 86400000 + 3600000,
+  },
+  {
+    id: 'tx_sample_8',
+    type: 'credit_sale',
+    amount: 890,
+    customerName: 'Anita Sharma',
+    phone: '9123456780',
+    date: getTodayString(1),
+    time: '05:30 PM',
+    notes: 'Atta & Cooking Oil on Udhar',
+    createdAt: Date.now() - 86400000 + 7200000,
+  },
+];
 
 export const loadSettings = (): StoreSettings => {
   try {

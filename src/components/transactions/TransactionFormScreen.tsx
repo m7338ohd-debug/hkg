@@ -70,9 +70,12 @@ export const TransactionFormScreen: React.FC<TransactionFormScreenProps> = ({
     (c) => customerName && c.customerName.toLowerCase().includes(customerName.toLowerCase())
   );
 
-  const handleSelectCustomer = (name: string, custPhone?: string) => {
+  const handleSelectCustomer = (name: string, custPhone?: string, dueAmount?: number) => {
     setCustomerName(name);
     if (custPhone) setPhone(custPhone);
+    if (dueAmount && type === 'credit_payment' && !amount) {
+      setAmount(dueAmount.toString());
+    }
   };
 
   const handleQuickReceiveRow = (name: string, custPhone?: string, dueAmount?: number) => {
@@ -91,6 +94,11 @@ export const TransactionFormScreen: React.FC<TransactionFormScreenProps> = ({
 
     const savedCustName = customerName.trim();
     const savedCustPhone = phone.trim();
+
+    if ((type === 'credit_sale' || type === 'credit_payment') && !savedCustName) {
+      showToast('Customer Name Required', 'Please enter or select a customer name for Udhar transactions', 'error');
+      return;
+    }
 
     addTransaction({
       type,

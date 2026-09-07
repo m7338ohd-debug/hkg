@@ -17,6 +17,7 @@ import {
   Smartphone,
   Eye,
   CalendarCheck,
+  Table as TableIcon,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
