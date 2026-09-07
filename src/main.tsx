@@ -18,12 +18,16 @@ if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
     navigator.serviceWorker
       .register('./sw.js')
       .then((reg) => {
+        // Auto update service worker on navigation
+        reg.update();
+
         reg.onupdatefound = () => {
           const installingWorker = reg.installing;
           if (installingWorker) {
             installingWorker.onstatechange = () => {
               if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                console.log('New content available; please refresh.');
+                console.log('New app deployment available; auto-reloading page.');
+                window.location.reload();
               }
             };
           }
@@ -32,6 +36,15 @@ if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
       .catch((err) => {
         console.log('PWA Service Worker registration skipped or failed:', err);
       });
+  });
+
+  // Auto reload window when new service worker activates
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing) {
+      refreshing = true;
+      window.location.reload();
+    }
   });
 }
 

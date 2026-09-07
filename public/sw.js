@@ -1,4 +1,4 @@
-const CACHE_NAME = 'store-cashflow-v5';
+const CACHE_NAME = 'store-cashflow-v6';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -12,7 +12,6 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {
-      // Use Promise.allSettled so a missing optional asset won't break installation
       await Promise.allSettled(
         ASSETS_TO_CACHE.map((asset) =>
           cache.add(asset).catch((err) => console.log('SW optional asset cache failed:', asset, err))
@@ -31,7 +30,9 @@ self.addEventListener('activate', (event) => {
           .filter((name) => name !== CACHE_NAME)
           .map((name) => caches.delete(name))
       );
-    }).then(() => self.clients.claim())
+    }).then(() => {
+      self.clients.claim();
+    })
   );
 });
 
