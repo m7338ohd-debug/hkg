@@ -1,7 +1,19 @@
 import type { Transaction, StoreSettings } from '../types';
 
 const TRANSACTIONS_KEY = 'provision_store_cashflow_transactions';
+const TRANSACTIONS_VAULT_KEY = 'provision_store_cashflow_transactions_vault';
+
 const SETTINGS_KEY = 'provision_store_cashflow_settings';
+const SETTINGS_VAULT_KEY = 'provision_store_cashflow_settings_vault';
+
+const HOME_MAINTENANCE_KEY = 'provision_store_home_maintenance';
+const HOME_MAINTENANCE_VAULT_KEY = 'provision_store_home_maintenance_vault';
+
+const FAMILY_INCOME_KEY = 'provision_store_family_income';
+const FAMILY_INCOME_VAULT_KEY = 'provision_store_family_income_vault';
+
+const FIXED_MONTHLY_KEY = 'provision_store_fixed_monthly_expenses';
+const FIXED_MONTHLY_VAULT_KEY = 'provision_store_fixed_monthly_expenses_vault';
 
 const DEVICE_ID_KEY = 'provision_store_device_id';
 
@@ -52,17 +64,11 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   createdAccountDate: new Date().toISOString().split('T')[0],
 };
 
-const getTodayString = (offsetDays = 0) => {
-  const d = new Date();
-  d.setDate(d.getDate() - offsetDays);
-  return d.toISOString().split('T')[0];
-};
-
 export const SAMPLE_TRANSACTIONS: Transaction[] = [];
 
 export const loadSettings = (): StoreSettings => {
   try {
-    const data = localStorage.getItem(SETTINGS_KEY);
+    const data = localStorage.getItem(SETTINGS_KEY) || localStorage.getItem(SETTINGS_VAULT_KEY);
     const deviceId = getOrCreateDeviceId();
     const fingerprint = getDeviceFingerprint();
 
@@ -88,7 +94,9 @@ export const loadSettings = (): StoreSettings => {
 
 export const saveSettings = (settings: StoreSettings): void => {
   try {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    const json = JSON.stringify(settings);
+    localStorage.setItem(SETTINGS_KEY, json);
+    localStorage.setItem(SETTINGS_VAULT_KEY, json);
   } catch (e) {
     console.error('Error saving settings to storage', e);
   }
@@ -96,38 +104,41 @@ export const saveSettings = (settings: StoreSettings): void => {
 
 export const loadTransactions = (): Transaction[] => {
   try {
-    const data = localStorage.getItem(TRANSACTIONS_KEY);
+    const data = localStorage.getItem(TRANSACTIONS_KEY) || localStorage.getItem(TRANSACTIONS_VAULT_KEY);
     if (data) {
       const parsed = JSON.parse(data);
-      if (Array.isArray(parsed)) {
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        saveTransactions(parsed);
         return parsed;
       }
     }
   } catch (e) {
     console.error('Error loading transactions from storage', e);
   }
-  saveTransactions([]);
   return [];
 };
 
 export const saveTransactions = (transactions: Transaction[]): void => {
   try {
-    localStorage.setItem(TRANSACTIONS_KEY, JSON.stringify(transactions));
+    const json = JSON.stringify(transactions);
+    localStorage.setItem(TRANSACTIONS_KEY, json);
+    if (Array.isArray(transactions) && transactions.length > 0) {
+      localStorage.setItem(TRANSACTIONS_VAULT_KEY, json);
+    }
   } catch (e) {
     console.error('Error saving transactions to storage', e);
   }
 };
 
-const HOME_MAINTENANCE_KEY = 'provision_store_home_maintenance';
-const FAMILY_INCOME_KEY = 'provision_store_family_income';
-const FIXED_MONTHLY_KEY = 'provision_store_fixed_monthly_expenses';
-
 export const loadHomeMaintenance = (): any[] => {
   try {
-    const data = localStorage.getItem(HOME_MAINTENANCE_KEY);
+    const data = localStorage.getItem(HOME_MAINTENANCE_KEY) || localStorage.getItem(HOME_MAINTENANCE_VAULT_KEY);
     if (data) {
       const parsed = JSON.parse(data);
-      if (Array.isArray(parsed)) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        saveHomeMaintenance(parsed);
+        return parsed;
+      }
     }
   } catch (e) {
     console.error('Error loading home maintenance data', e);
@@ -137,7 +148,11 @@ export const loadHomeMaintenance = (): any[] => {
 
 export const saveHomeMaintenance = (entries: any[]): void => {
   try {
-    localStorage.setItem(HOME_MAINTENANCE_KEY, JSON.stringify(entries));
+    const json = JSON.stringify(entries);
+    localStorage.setItem(HOME_MAINTENANCE_KEY, json);
+    if (Array.isArray(entries) && entries.length > 0) {
+      localStorage.setItem(HOME_MAINTENANCE_VAULT_KEY, json);
+    }
   } catch (e) {
     console.error('Error saving home maintenance data', e);
   }
@@ -145,10 +160,13 @@ export const saveHomeMaintenance = (entries: any[]): void => {
 
 export const loadFamilyIncome = (): any[] => {
   try {
-    const data = localStorage.getItem(FAMILY_INCOME_KEY);
+    const data = localStorage.getItem(FAMILY_INCOME_KEY) || localStorage.getItem(FAMILY_INCOME_VAULT_KEY);
     if (data) {
       const parsed = JSON.parse(data);
-      if (Array.isArray(parsed)) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        saveFamilyIncome(parsed);
+        return parsed;
+      }
     }
   } catch (e) {
     console.error('Error loading family income data', e);
@@ -158,7 +176,11 @@ export const loadFamilyIncome = (): any[] => {
 
 export const saveFamilyIncome = (entries: any[]): void => {
   try {
-    localStorage.setItem(FAMILY_INCOME_KEY, JSON.stringify(entries));
+    const json = JSON.stringify(entries);
+    localStorage.setItem(FAMILY_INCOME_KEY, json);
+    if (Array.isArray(entries) && entries.length > 0) {
+      localStorage.setItem(FAMILY_INCOME_VAULT_KEY, json);
+    }
   } catch (e) {
     console.error('Error saving family income data', e);
   }
@@ -166,10 +188,13 @@ export const saveFamilyIncome = (entries: any[]): void => {
 
 export const loadFixedMonthlyExpenses = (): any[] => {
   try {
-    const data = localStorage.getItem(FIXED_MONTHLY_KEY);
+    const data = localStorage.getItem(FIXED_MONTHLY_KEY) || localStorage.getItem(FIXED_MONTHLY_VAULT_KEY);
     if (data) {
       const parsed = JSON.parse(data);
-      if (Array.isArray(parsed)) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        saveFixedMonthlyExpenses(parsed);
+        return parsed;
+      }
     }
   } catch (e) {
     console.error('Error loading fixed monthly expenses data', e);
@@ -179,7 +204,11 @@ export const loadFixedMonthlyExpenses = (): any[] => {
 
 export const saveFixedMonthlyExpenses = (entries: any[]): void => {
   try {
-    localStorage.setItem(FIXED_MONTHLY_KEY, JSON.stringify(entries));
+    const json = JSON.stringify(entries);
+    localStorage.setItem(FIXED_MONTHLY_KEY, json);
+    if (Array.isArray(entries) && entries.length > 0) {
+      localStorage.setItem(FIXED_MONTHLY_VAULT_KEY, json);
+    }
   } catch (e) {
     console.error('Error saving fixed monthly expenses data', e);
   }

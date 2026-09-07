@@ -43,10 +43,9 @@ export class ErrorBoundary extends Component<Props, State> {
           registrations.forEach((reg) => reg.unregister());
         });
       }
-      localStorage.clear();
-      sessionStorage.clear();
+      // PWA service worker and HTTP cache cleared safely. User store ledger data is preserved.
     } catch (e) {
-      console.error('Error clearing app storage', e);
+      console.error('Error clearing app cache', e);
     }
     window.location.reload();
   };

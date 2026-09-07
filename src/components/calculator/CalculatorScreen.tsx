@@ -36,7 +36,7 @@ export const CalculatorScreen: React.FC = () => {
     let cleaned = expr.replace(/[+\-*/]+$/, '');
     // Strip octal-inducing leading zeros from integer tokens (e.g. "020" -> "20", "10+05" -> "10+5", "-4*020" -> "-4*20")
     // Keeps valid decimal numbers like "0.20" intact.
-    cleaned = cleaned.replace(/(^|[\+\-\*/\(])0+(?=\d)/g, '$1');
+    cleaned = cleaned.replace(/(^|[+/*\-()])0+(?=\d)/g, '$1');
     return cleaned;
   };
 
@@ -73,7 +73,7 @@ export const CalculatorScreen: React.FC = () => {
     }
 
     // Handle leading zero in numbers (e.g. typing "0" then "2" becomes "2", not "02")
-    const isEndingWithSoloZero = expression === '0' || /(^|[\+\-\*/])0$/.test(expression);
+    const isEndingWithSoloZero = expression === '0' || /(^|[+/*\-])0$/.test(expression);
     if (isEndingWithSoloZero) {
       if (val === '0') return; // Prevent "00"
       if (/[1-9]/.test(val)) {
@@ -84,7 +84,7 @@ export const CalculatorScreen: React.FC = () => {
 
     // Prevent duplicate decimal points in the same number token
     if (val === '.') {
-      const lastNumberSegment = expression.split(/[\+\-\*/]/).pop() || '';
+      const lastNumberSegment = expression.split(/[+/*\-]/).pop() || '';
       if (lastNumberSegment.includes('.')) return;
       if (!lastNumberSegment) {
         setExpression((prev) => prev + '0.');
