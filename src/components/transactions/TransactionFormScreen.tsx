@@ -15,10 +15,9 @@ import {
   MessageSquare,
   Send,
   X,
-  Share2,
 } from 'lucide-react';
 import { useCashFlow } from '../../context/CashFlowContext';
-import type { Transaction, TransactionType, PurchaseCategory, ExpenseCategory, WithdrawalPerson, WithdrawalReason, PaymentMethod } from '../../types';
+import type { TransactionType, PurchaseCategory, ExpenseCategory, WithdrawalPerson, WithdrawalReason, PaymentMethod } from '../../types';
 import { getTodayDateString, getCustomerCreditSummaries, formatCurrency } from '../../utils/calculations';
 import { useSpeechToText } from '../../utils/useSpeech';
 

@@ -63,7 +63,7 @@ interface DetailModalData {
   notes?: string;
 }
 
-export const StoreLLMScreen: React.FC<StoreLLMScreenProps> = ({ setActiveTab }) => {
+export const StoreLLMScreen: React.FC<StoreLLMScreenProps> = ({ setActiveTab: _setActiveTab }) => {
   const { transactions, settings, setManualDailyProfit } = useCashFlow();
 
   const todayStr = getTodayDateString();
