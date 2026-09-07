@@ -38,7 +38,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onOpenDownloadAp
   const [currency, setCurrency] = useState(settings.currency);
   const [openingCash, setOpeningCash] = useState(settings.openingCash.toString());
   const [investedAmount, setInvestedAmount] = useState((settings.investedAmount || 25000).toString());
-  const [profitRate, setProfitRate] = useState((settings.profitRate || 2).toString());
+  const [profitRate, setProfitRate] = useState((settings.profitRate || 10).toString());
   const [storeSyncCode, setStoreSyncCode] = useState(settings.storeSyncCode || 'AYESHA-STORE-01');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -55,7 +55,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onOpenDownloadAp
       currency: currency.trim() || '₹',
       openingCash: isNaN(numOpening) ? 0 : numOpening,
       investedAmount: isNaN(numInvested) ? 25000 : numInvested,
-      profitRate: isNaN(numRate) ? 2 : numRate,
+      profitRate: isNaN(numRate) ? 10 : numRate,
       storeSyncCode: storeSyncCode.trim() || 'AYESHA-STORE-01',
     });
   };
@@ -308,7 +308,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onOpenDownloadAp
               required
               value={profitRate}
               onChange={(e) => setProfitRate(e.target.value)}
-              placeholder="2"
+              placeholder="10"
               className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
             />
           </div>
