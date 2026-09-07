@@ -36,39 +36,36 @@ export const ProfitCard: React.FC = () => {
 
   const handleOpenEditModal = () => {
     setSelectedDate(todayStr);
-    setProfitMode(today.profit > 0 ? 'addon' : 'override');
+    setProfitMode('addon');
     setAddonAmountInput('');
     setOverrideAmountInput(today.profit > 0 ? today.profit.toString() : today.autoProfit.toString());
-    setProfitNotesInput('');
+    setProfitNotesInput(today.manualProfitNotes || '');
     setIsEditModalOpen(true);
   };
 
   const handleSaveProfit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    let finalTotal = 0;
     let finalNote = profitNotesInput.trim();
 
     if (profitMode === 'addon') {
       const addedNum = parseFloat(addonAmountInput);
       if (isNaN(addedNum) || addedNum < 0) return;
 
-      finalTotal = currentRecordedProfit + addedNum;
-      const noteAppend = `+${settings.currency}${addedNum}`;
-      finalNote = finalNote
-        ? `${finalNote} (${noteAppend})`
-        : `Prev ${settings.currency}${currentRecordedProfit} ${noteAppend} = Total ${settings.currency}${finalTotal}`;
+      if (!finalNote) {
+        finalNote = `Added +${settings.currency}${addedNum} extra profit`;
+      }
+      setManualDailyProfit(selectedDate, addedNum, finalNote, 'addon');
     } else {
       const overrideNum = parseFloat(overrideAmountInput);
       if (isNaN(overrideNum) || overrideNum < 0) return;
 
-      finalTotal = overrideNum;
       if (!finalNote) {
-        finalNote = `Set Total ${settings.currency}${finalTotal}`;
+        finalNote = `Set Total ${settings.currency}${overrideNum}`;
       }
+      setManualDailyProfit(selectedDate, overrideNum, finalNote, 'override');
     }
 
-    setManualDailyProfit(selectedDate, finalTotal, finalNote);
     setIsEditModalOpen(false);
   };
 
@@ -77,7 +74,7 @@ export const ProfitCard: React.FC = () => {
     setIsEditModalOpen(false);
   };
 
-  const calculatedAddonTotal = currentRecordedProfit + (parseFloat(addonAmountInput) || 0);
+  const calculatedAddonTotal = today.autoProfit + (parseFloat(addonAmountInput) || 0);
 
   return (
     <div className="bg-gradient-to-br from-emerald-950/90 via-slate-900 to-slate-900 text-white rounded-3xl p-5 shadow-xl border border-emerald-500/30 space-y-4 relative overflow-hidden">
@@ -218,9 +215,9 @@ export const ProfitCard: React.FC = () => {
               {profitMode === 'addon' && (
                 <div className="space-y-2.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 p-3.5 rounded-2xl">
                   <div className="flex justify-between items-center text-xs">
-                    <span className="text-emerald-800 dark:text-emerald-300 font-bold">Currently Recorded Profit:</span>
+                    <span className="text-emerald-800 dark:text-emerald-300 font-bold">Auto Cash Sales Profit:</span>
                     <span className="font-mono font-black text-emerald-700 dark:text-emerald-300 text-sm">
-                      {formatCurrency(currentRecordedProfit, settings.currency)}
+                      {formatCurrency(today.autoProfit, settings.currency)}
                     </span>
                   </div>
 

@@ -12,9 +12,13 @@ import {
   ArrowRight,
   Mic,
   Home,
+  MessageSquare,
+  Send,
+  X,
+  Share2,
 } from 'lucide-react';
 import { useCashFlow } from '../../context/CashFlowContext';
-import type { TransactionType, PurchaseCategory, ExpenseCategory, WithdrawalPerson, WithdrawalReason, PaymentMethod } from '../../types';
+import type { Transaction, TransactionType, PurchaseCategory, ExpenseCategory, WithdrawalPerson, WithdrawalReason, PaymentMethod } from '../../types';
 import { getTodayDateString, getCustomerCreditSummaries, formatCurrency } from '../../utils/calculations';
 import { useSpeechToText } from '../../utils/useSpeech';
 
@@ -27,7 +31,7 @@ export const TransactionFormScreen: React.FC<TransactionFormScreenProps> = ({
   initialType = 'credit_sale',
   onSuccess,
 }) => {
-  const { addTransaction, transactions, settings } = useCashFlow();
+  const { addTransaction, transactions, settings, showToast } = useCashFlow();
   const [type, setType] = useState<TransactionType>(initialType);
 
   // Form states
@@ -40,6 +44,15 @@ export const TransactionFormScreen: React.FC<TransactionFormScreenProps> = ({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Cash');
   const [notes, setNotes] = useState<string>('');
   const [date, setDate] = useState<string>(getTodayDateString());
+
+  // Saved Transaction Message Modal State
+  const [savedTxForMsg, setSavedTxForMsg] = useState<{
+    customerName: string;
+    phone: string;
+    amount: number;
+    type: TransactionType;
+    date: string;
+  } | null>(null);
 
   // Voice Recognition for Customer / Notes
   const { isListening, startListening } = useSpeechToText((spokenText) => {
@@ -70,19 +83,22 @@ export const TransactionFormScreen: React.FC<TransactionFormScreenProps> = ({
     if (dueAmount) setAmount(dueAmount.toString());
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const processSubmit = (shouldOpenMsgModal = false) => {
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount <= 0) {
+      showToast('Invalid Amount', 'Please enter a valid transaction amount', 'error');
       return;
     }
+
+    const savedCustName = customerName.trim();
+    const savedCustPhone = phone.trim();
 
     addTransaction({
       type,
       amount: numAmount,
       date,
-      customerName: customerName.trim() || undefined,
-      phone: phone.trim() || undefined,
+      customerName: savedCustName || undefined,
+      phone: savedCustPhone || undefined,
       category: type === 'purchase' || type === 'expense' ? category : undefined,
       takenBy: type === 'withdrawal' ? takenBy : undefined,
       reason: type === 'withdrawal' ? reason : undefined,
@@ -90,13 +106,32 @@ export const TransactionFormScreen: React.FC<TransactionFormScreenProps> = ({
       notes: notes.trim() || undefined,
     });
 
+    if (shouldOpenMsgModal || savedCustPhone) {
+      setSavedTxForMsg({
+        customerName: savedCustName || 'Customer',
+        phone: savedCustPhone,
+        amount: numAmount,
+        type,
+        date,
+      });
+    }
+
     // Reset Form
     setAmount('');
     setCustomerName('');
     setPhone('');
     setNotes('');
 
-    if (onSuccess) onSuccess();
+    if (onSuccess && !shouldOpenMsgModal && !savedCustPhone) onSuccess();
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    processSubmit(false);
+  };
+
+  const handleSaveAndSendMsg = () => {
+    processSubmit(true);
   };
 
   const typeTabs: { id: TransactionType; label: string; icon: any; color: string }[] = [
@@ -230,7 +265,7 @@ export const TransactionFormScreen: React.FC<TransactionFormScreenProps> = ({
 
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Phone Number (Optional)
+                Phone Number (Optional - saved for WhatsApp/SMS)
               </label>
               <div className="relative">
                 <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -398,14 +433,25 @@ export const TransactionFormScreen: React.FC<TransactionFormScreenProps> = ({
           />
         </div>
 
-        {/* Save Button */}
-        <button
-          type="submit"
-          className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold rounded-2xl shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] transition-all"
-        >
-          <CheckCircle2 className="w-5 h-5" />
-          SAVE TRANSACTION ({formatCurrency(parseFloat(amount) || 0, settings.currency)})
-        </button>
+        {/* Save Action Buttons */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+          <button
+            type="submit"
+            className="py-3.5 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold rounded-2xl shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] transition-all text-xs sm:text-sm"
+          >
+            <CheckCircle2 className="w-5 h-5" />
+            SAVE TRANSACTION
+          </button>
+
+          <button
+            type="button"
+            onClick={handleSaveAndSendMsg}
+            className="py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold rounded-2xl shadow-lg shadow-purple-500/25 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] transition-all text-xs sm:text-sm"
+          >
+            <Send className="w-4 h-4" />
+            SAVE & SEND MESSAGE
+          </button>
+        </div>
       </form>
 
       {/* Active Udhar Customers List (Visible when on Credit tabs) */}
@@ -444,6 +490,99 @@ export const TransactionFormScreen: React.FC<TransactionFormScreenProps> = ({
           </div>
         </div>
       )}
+
+      {/* Post-Save Send WhatsApp / SMS Message Modal */}
+      {savedTxForMsg && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-sm rounded-3xl p-5 shadow-2xl space-y-4 text-slate-900 dark:text-white animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+              <h4 className="font-extrabold text-sm flex items-center gap-2 text-slate-900 dark:text-white">
+                <Send className="w-4 h-4 text-purple-500" /> Send Message Receipt
+              </h4>
+              <button
+                onClick={() => {
+                  setSavedTxForMsg(null);
+                  if (onSuccess) onSuccess();
+                }}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="p-3 bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900/60 rounded-2xl text-xs space-y-1">
+                <p className="font-bold text-purple-900 dark:text-purple-300">
+                  Transaction Saved ({formatCurrency(savedTxForMsg.amount, settings.currency)})
+                </p>
+                <p className="text-[11px] text-slate-600 dark:text-slate-400">
+                  Customer: <strong>{savedTxForMsg.customerName}</strong>
+                </p>
+                {savedTxForMsg.phone && (
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400">
+                    Phone: <strong>{savedTxForMsg.phone}</strong>
+                  </p>
+                )}
+              </div>
+
+              {/* Message text generator */}
+              {(() => {
+                const store = settings.storeName || 'Ayesha Provision Store';
+                const typeLabel =
+                  savedTxForMsg.type === 'credit_sale'
+                    ? 'Udhar purchase'
+                    : savedTxForMsg.type === 'credit_payment'
+                    ? 'Udhar payment'
+                    : 'Transaction';
+                const msgText = `Greetings from ${store}! Your ${typeLabel} of ${settings.currency}${savedTxForMsg.amount} on ${savedTxForMsg.date} has been recorded. Thank you!`;
+                const cleanPhone = savedTxForMsg.phone ? savedTxForMsg.phone.replace(/[^0-9]/g, '') : '';
+                const waPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+
+                return (
+                  <div className="space-y-3">
+                    <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-mono">
+                      "{msgText}"
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => {
+                          const waUrl = waPhone
+                            ? `https://api.whatsapp.com/send?phone=${waPhone}&text=${encodeURIComponent(msgText)}`
+                            : `https://api.whatsapp.com/send?text=${encodeURIComponent(msgText)}`;
+                          window.open(waUrl, '_blank');
+                          showToast('WhatsApp Opened', `Sending message for ${savedTxForMsg.customerName}`);
+                          setSavedTxForMsg(null);
+                          if (onSuccess) onSuccess();
+                        }}
+                        className="py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <Send className="w-4 h-4" /> WhatsApp
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          const smsUrl = cleanPhone
+                            ? `sms:${cleanPhone}?body=${encodeURIComponent(msgText)}`
+                            : `sms:?body=${encodeURIComponent(msgText)}`;
+                          window.location.href = smsUrl;
+                          showToast('SMS App Opened', `Preparing SMS for ${savedTxForMsg.customerName}`);
+                          setSavedTxForMsg(null);
+                          if (onSuccess) onSuccess();
+                        }}
+                        className="py-3 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs rounded-xl shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <MessageSquare className="w-4 h-4" /> SMS App
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+

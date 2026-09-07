@@ -34,8 +34,11 @@ export const ReportsScreen: React.FC = () => {
   const customCreditReceived = filteredCustomTxs.filter((t) => t.type === 'credit_payment').reduce((sum, t) => sum + t.amount, 0);
   const customPurchases = filteredCustomTxs.filter((t) => t.type === 'purchase').reduce((sum, t) => sum + t.amount, 0);
   const customExpenses = filteredCustomTxs.filter((t) => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
-  const customWithdrawals = filteredCustomTxs.filter((t) => t.type === 'withdrawal').reduce((sum, t) => sum + t.amount, 0);
-  const customProfit = (customTotalSales * (settings.profitRate || 2)) / 100;
+  const customDates = new Set<string>(filteredCustomTxs.map((t) => t.date));
+  let customProfit = 0;
+  customDates.forEach((dStr) => {
+    customProfit += calculateSummary(transactions, settings, dStr).profit;
+  });
 
   const handleExportPDF = () => {
     exportReportToPDF('printable-report-card', `${activeTab}_financial_report`);

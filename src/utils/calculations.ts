@@ -255,8 +255,8 @@ export const calculateSummary = (
   // Total Sales includes Cash Sales, Udhar Given, and Home Use entries
   const totalSales = cashSales + creditSales + homeUseSales;
   
-  // Auto-calculated Profit is 10% of Total Sales
-  const autoProfit = totalSales * (profitRate / 100);
+  // Auto-calculated Profit is 10% of Cash Sales (or profitRate % of cash sales)
+  const autoProfit = cashSales * (profitRate / 100);
   
   // Check if manual profit has been set for target date
   const rawProfitVal = settings.manualDailyProfits ? settings.manualDailyProfits[dateToUse] : undefined;
@@ -264,17 +264,30 @@ export const calculateSummary = (
 
   let manualProfitVal: number | undefined = undefined;
   let manualProfitNotesVal: string | undefined = undefined;
+  let manualProfitModeVal: 'addon' | 'override' | undefined = undefined;
+
+  let profit = autoProfit;
 
   if (isManualProfit) {
     if (typeof rawProfitVal === 'object' && rawProfitVal !== null) {
-      manualProfitVal = rawProfitVal.amount;
       manualProfitNotesVal = rawProfitVal.notes;
+      manualProfitModeVal = rawProfitVal.mode || (rawProfitVal.addOn !== undefined ? 'addon' : 'override');
+      
+      if (manualProfitModeVal === 'addon' || rawProfitVal.addOn !== undefined) {
+        const addOnVal = rawProfitVal.addOn ?? rawProfitVal.amount ?? 0;
+        manualProfitVal = addOnVal;
+        profit = autoProfit + addOnVal;
+      } else {
+        manualProfitVal = rawProfitVal.amount;
+        profit = rawProfitVal.amount;
+      }
     } else if (typeof rawProfitVal === 'number') {
       manualProfitVal = rawProfitVal;
+      manualProfitModeVal = 'addon';
+      profit = autoProfit + rawProfitVal;
     }
   }
 
-  const profit = isManualProfit && manualProfitVal !== undefined ? manualProfitVal : autoProfit;
   const investorProfit = profit;
 
   const cashInHand = openingCash + cashSales + creditReceived - purchases - expenses - withdrawals;
@@ -296,6 +309,7 @@ export const calculateSummary = (
     autoProfit,
     manualProfit: manualProfitVal,
     manualProfitNotes: manualProfitNotesVal,
+    manualProfitMode: manualProfitModeVal,
     isManualProfit,
     investorProfit,
     outstandingCredit,
@@ -305,7 +319,6 @@ export const calculateSummary = (
 
 export const calculatePeriodSummary = (transactions: Transaction[], settings: StoreSettings) => {
   const todaySummary = calculateSummary(transactions, settings, getTodayDateString());
-  const profitRate = settings.profitRate || 10;
 
   const weeklyTxs = filterTransactionsByDate(transactions, 'this_week');
   let weeklyCashSales = 0;
@@ -316,7 +329,9 @@ export const calculatePeriodSummary = (transactions: Transaction[], settings: St
   let weeklyExpenses = 0;
   let weeklyWithdrawals = 0;
 
+  const weeklyDates = new Set<string>();
   weeklyTxs.forEach((t) => {
+    weeklyDates.add(t.date);
     if (t.type === 'cash_sale') weeklyCashSales += t.amount;
     if (t.type === 'credit_sale') weeklyCreditSales += t.amount;
     if (t.type === 'home_use') weeklyHomeUseSales += t.amount;
@@ -326,8 +341,30 @@ export const calculatePeriodSummary = (transactions: Transaction[], settings: St
     if (t.type === 'withdrawal') weeklyWithdrawals += t.amount;
   });
 
+  // Also include dates in manualDailyProfits that fall within this week
+  if (settings.manualDailyProfits) {
+    const todayObj = new Date();
+    const firstDay = new Date(todayObj);
+    const day = todayObj.getDay();
+    const diff = todayObj.getDate() - day + (day === 0 ? -6 : 1);
+    firstDay.setDate(diff);
+    firstDay.setHours(0, 0, 0, 0);
+
+    Object.keys(settings.manualDailyProfits).forEach((dStr) => {
+      const d = new Date(dStr);
+      if (d >= firstDay && d <= todayObj) {
+        weeklyDates.add(dStr);
+      }
+    });
+  }
+
+  // Calculate accurate weekly profit by summing daily profits for all days in the week
+  let weeklyProfit = 0;
+  weeklyDates.forEach((dStr) => {
+    weeklyProfit += calculateSummary(transactions, settings, dStr).profit;
+  });
+
   const weeklyTotalSales = weeklyCashSales + weeklyCreditSales + weeklyHomeUseSales;
-  const weeklyProfit = weeklyTotalSales * (profitRate / 100);
 
   const monthlyTxs = filterTransactionsByDate(transactions, 'this_month');
   let monthlyCashSales = 0;
@@ -338,7 +375,9 @@ export const calculatePeriodSummary = (transactions: Transaction[], settings: St
   let monthlyExpenses = 0;
   let monthlyWithdrawals = 0;
 
+  const monthlyDates = new Set<string>();
   monthlyTxs.forEach((t) => {
+    monthlyDates.add(t.date);
     if (t.type === 'cash_sale') monthlyCashSales += t.amount;
     if (t.type === 'credit_sale') monthlyCreditSales += t.amount;
     if (t.type === 'home_use') monthlyHomeUseSales += t.amount;
@@ -348,8 +387,26 @@ export const calculatePeriodSummary = (transactions: Transaction[], settings: St
     if (t.type === 'withdrawal') monthlyWithdrawals += t.amount;
   });
 
+  if (settings.manualDailyProfits) {
+    const todayObj = new Date();
+    const currentMonth = todayObj.getMonth();
+    const currentYear = todayObj.getFullYear();
+
+    Object.keys(settings.manualDailyProfits).forEach((dStr) => {
+      const d = new Date(dStr);
+      if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
+        monthlyDates.add(dStr);
+      }
+    });
+  }
+
+  // Calculate accurate monthly profit by summing daily profits for all days in the month
+  let monthlyProfit = 0;
+  monthlyDates.forEach((dStr) => {
+    monthlyProfit += calculateSummary(transactions, settings, dStr).profit;
+  });
+
   const monthlyTotalSales = monthlyCashSales + monthlyCreditSales + monthlyHomeUseSales;
-  const monthlyProfit = monthlyTotalSales * (profitRate / 100);
 
   return {
     today: todaySummary,

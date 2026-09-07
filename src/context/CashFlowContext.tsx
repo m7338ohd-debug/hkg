@@ -55,7 +55,7 @@ interface CashFlowContextType {
   resetPeriodData: (period: 'weekly' | 'monthly' | 'all') => void;
   importBackup: (jsonStr: string) => { success: boolean; message: string };
   toggleDarkMode: () => void;
-  setManualDailyProfit: (date: string, amount?: number, notes?: string) => void;
+  setManualDailyProfit: (date: string, amount?: number, notes?: string, mode?: 'addon' | 'override') => void;
   loginStore: (syncCode: string, userName: string) => Promise<boolean>;
   registerStoreAccount: (params: {
     storeName: string;
@@ -591,7 +591,12 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return res;
   };
 
-  const setManualDailyProfit = (date: string, amount?: number, notes?: string) => {
+  const setManualDailyProfit = (
+    date: string,
+    amount?: number,
+    notes?: string,
+    mode: 'addon' | 'override' = 'addon'
+  ) => {
     const updatedProfits = { ...(settings.manualDailyProfits || {}) };
 
     if (amount === undefined || amount === null) {
@@ -601,14 +606,16 @@ export const CashFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return;
     }
 
-    if (notes && notes.trim()) {
-      updatedProfits[date] = { amount, notes: notes.trim() };
-    } else {
-      updatedProfits[date] = amount;
-    }
+    updatedProfits[date] = {
+      amount,
+      addOn: mode === 'addon' ? amount : undefined,
+      mode,
+      notes: notes?.trim() || undefined,
+    };
 
     updateSettings({ manualDailyProfits: updatedProfits });
-    showToast('Daily Profit Updated', `${settings.currency}${amount} set as profit for ${date}`);
+    const modeText = mode === 'addon' ? 'Add-on Profit' : 'Total Profit Override';
+    showToast('Daily Profit Updated', `${settings.currency}${amount} (${modeText}) set for ${date}`);
   };
 
   const loginStore = async (syncCode: string, userName: string): Promise<boolean> => {

@@ -24,10 +24,18 @@ import {
   User,
   HeartPulse,
   ShoppingBag,
+  Download,
+  Share2,
+  FileText,
+  Send,
+  MessageSquare,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { useCashFlow } from '../../context/CashFlowContext';
 import type { Transaction, TransactionType, HomeMaintenanceEntry } from '../../types';
-import { formatCurrency, formatDateDisplay, filterTransactionsByDate } from '../../utils/calculations';
+import { formatCurrency, formatDateDisplay, filterTransactionsByDate, calculateSummary, calculatePeriodSummary } from '../../utils/calculations';
+import { exportReportToPDF, generateTextReport } from '../../utils/pdfExport';
 import { useSpeechToText } from '../../utils/useSpeech';
 
 export const HistoryScreen: React.FC = () => {
@@ -38,6 +46,7 @@ export const HistoryScreen: React.FC = () => {
     editTransaction,
     homeMaintenanceList,
     deleteHomeMaintenance,
+    showToast,
   } = useCashFlow();
 
   // Active View Tab: 'transactions' or 'home_maintenance'
@@ -57,6 +66,13 @@ export const HistoryScreen: React.FC = () => {
 
   // Edit Modal State for Transactions
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
+
+  // Message Modal State for single Transaction receipt dispatch
+  const [txForMsg, setTxForMsg] = useState<Transaction | null>(null);
+
+  // Report Generator Modal State for Daily, Weekly, Custom Range Reports
+  const [reportModalPeriod, setReportModalPeriod] = useState<'daily' | 'weekly' | 'custom' | null>(null);
+  const [copiedReport, setCopiedReport] = useState<boolean>(false);
 
   // Filtered Transaction Dataset
   const filteredTxList = useMemo(() => {
@@ -118,8 +134,6 @@ export const HistoryScreen: React.FC = () => {
   const stats = useMemo(() => {
     let totalSales = 0;
     let totalCashSales = 0;
-    let totalPurchases = 0;
-    let totalExpenses = 0;
 
     filteredTxList.forEach((t) => {
       if (t.type === 'cash_sale') {
@@ -127,30 +141,15 @@ export const HistoryScreen: React.FC = () => {
         totalSales += t.amount;
       } else if (t.type === 'credit_sale' || t.type === 'home_use') {
         totalSales += t.amount;
-      } else if (t.type === 'purchase') {
-        totalPurchases += t.amount;
-      } else if (t.type === 'expense') {
-        totalExpenses += t.amount;
       }
     });
 
-    const profitRate = settings.profitRate || 2;
-    const salesProfit = totalCashSales * (profitRate / 100);
+    const targetDates = new Set(filteredTxList.map((t) => t.date));
+    let totalProfit = 0;
+    targetDates.forEach((dStr) => {
+      totalProfit += calculateSummary(transactions, settings, dStr).profit;
+    });
 
-    // Sum manual purchase profit entries if present
-    let manualProfitSum = 0;
-    if (settings.manualDailyProfits) {
-      const targetDates = new Set(filteredTxList.map((t) => t.date));
-      targetDates.forEach((d) => {
-        const val = settings.manualDailyProfits?.[d];
-        if (val !== undefined) {
-          if (typeof val === 'number') manualProfitSum += val;
-          else if (typeof val === 'object' && val !== null) manualProfitSum += val.amount;
-        }
-      });
-    }
-
-    const totalProfit = salesProfit + manualProfitSum;
     const totalHomeMaintenanceSpent = filteredHomeMaintenanceList.reduce((sum, item) => sum + item.amount, 0);
 
     return {
@@ -159,7 +158,7 @@ export const HistoryScreen: React.FC = () => {
       totalProfit,
       totalHomeMaintenanceSpent,
     };
-  }, [filteredTxList, filteredHomeMaintenanceList, settings]);
+  }, [filteredTxList, filteredHomeMaintenanceList, transactions, settings]);
 
   // Category breakdown for Home Maintenance
   const categoryBreakdown = useMemo(() => {
@@ -264,6 +263,40 @@ export const HistoryScreen: React.FC = () => {
           <p className="text-[10px] text-slate-400 mt-1">
             Total Spent & Used for Household
           </p>
+        </div>
+      </div>
+
+      {/* History Report Generation Options Bar (Daily, Weekly, Customized) */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-3xl p-4 shadow-lg border border-indigo-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 bg-indigo-500/20 text-indigo-400 rounded-xl border border-indigo-500/30">
+            <FileText className="w-5 h-5" />
+          </div>
+          <div>
+            <h4 className="font-extrabold text-xs text-white">Generate History Financial Reports</h4>
+            <p className="text-[10px] text-slate-300">Generate PDF or WhatsApp/SMS reports for Daily, Weekly or Custom Range</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto shrink-0">
+          <button
+            onClick={() => setReportModalPeriod('daily')}
+            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center gap-1 shadow-md cursor-pointer transition-all active:scale-95"
+          >
+            <Calendar className="w-3.5 h-3.5" /> Daily Report
+          </button>
+          <button
+            onClick={() => setReportModalPeriod('weekly')}
+            className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs flex items-center gap-1 shadow-md cursor-pointer transition-all active:scale-95"
+          >
+            <Clock className="w-3.5 h-3.5" /> Weekly Report
+          </button>
+          <button
+            onClick={() => setReportModalPeriod('custom')}
+            className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs flex items-center gap-1 shadow-md cursor-pointer transition-all active:scale-95"
+          >
+            <Tag className="w-3.5 h-3.5" /> Custom Report
+          </button>
         </div>
       </div>
 
@@ -475,8 +508,15 @@ export const HistoryScreen: React.FC = () => {
                         </span>
                       </div>
 
-                      {/* Edit / Delete Buttons */}
+                      {/* Edit / Message / Delete Buttons */}
                       <div className="flex flex-col gap-1 opacity-100 ml-1">
+                        <button
+                          onClick={() => setTxForMsg(t)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950 transition-colors cursor-pointer"
+                          title="Send Message Receipt (WhatsApp / SMS)"
+                        >
+                          <Send className="w-3.5 h-3.5" />
+                        </button>
                         <button
                           onClick={() => setEditingTx(t)}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors cursor-pointer"
@@ -700,6 +740,175 @@ export const HistoryScreen: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Single Transaction WhatsApp / SMS Message Modal */}
+      {txForMsg && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-sm rounded-3xl p-5 shadow-2xl space-y-4 text-slate-900 dark:text-white animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+              <h4 className="font-extrabold text-sm flex items-center gap-2">
+                <Send className="w-4 h-4 text-purple-500" /> Send Transaction Receipt
+              </h4>
+              <button
+                onClick={() => setTxForMsg(null)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="p-3 bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900/60 rounded-2xl text-xs space-y-1">
+                <div className="flex justify-between font-bold text-purple-900 dark:text-purple-300">
+                  <span>{txForMsg.customerName || txForMsg.category || 'Store Transaction'}</span>
+                  <span className="font-mono">{formatCurrency(txForMsg.amount, settings.currency)}</span>
+                </div>
+                <p className="text-[11px] text-slate-500">Date: {formatDateDisplay(txForMsg.date)} {txForMsg.time ? `• ${txForMsg.time}` : ''}</p>
+                {txForMsg.phone && <p className="text-[11px] text-slate-500">Mobile: {txForMsg.phone}</p>}
+              </div>
+
+              {(() => {
+                const store = settings.storeName || 'Ayesha Provision Store';
+                const name = txForMsg.customerName || 'Customer';
+                const msgText = `Greetings ${name} from ${store}! Transaction of ${settings.currency}${txForMsg.amount} (${txForMsg.type.replace('_', ' ')}) on ${formatDateDisplay(txForMsg.date)} has been logged. Thank you!`;
+                const cleanPhone = txForMsg.phone ? txForMsg.phone.replace(/[^0-9]/g, '') : '';
+                const waPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+
+                return (
+                  <div className="space-y-3">
+                    <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-mono">
+                      "{msgText}"
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => {
+                          const waUrl = waPhone
+                            ? `https://api.whatsapp.com/send?phone=${waPhone}&text=${encodeURIComponent(msgText)}`
+                            : `https://api.whatsapp.com/send?text=${encodeURIComponent(msgText)}`;
+                          window.open(waUrl, '_blank');
+                          showToast('WhatsApp Opened', `Sending receipt to ${name}`);
+                          setTxForMsg(null);
+                        }}
+                        className="py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <Send className="w-4 h-4" /> WhatsApp
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          const smsUrl = cleanPhone
+                            ? `sms:${cleanPhone}?body=${encodeURIComponent(msgText)}`
+                            : `sms:?body=${encodeURIComponent(msgText)}`;
+                          window.location.href = smsUrl;
+                          showToast('SMS App Opened', `Preparing SMS for ${name}`);
+                          setTxForMsg(null);
+                        }}
+                        className="py-3 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs rounded-xl shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <MessageSquare className="w-4 h-4" /> SMS App
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* History Financial Report Generator Modal (Daily, Weekly, Custom) */}
+      {reportModalPeriod && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-lg rounded-3xl p-5 shadow-2xl space-y-4 text-slate-900 dark:text-white max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+              <h4 className="font-extrabold text-sm flex items-center gap-2 text-indigo-600 dark:text-indigo-400 capitalize">
+                <FileText className="w-4 h-4 text-indigo-500" />
+                {reportModalPeriod} Financial Report
+              </h4>
+              <button
+                onClick={() => setReportModalPeriod(null)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Printable Report Card Container */}
+            <div id="history-modal-report-card" className="bg-slate-50 dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-3">
+              <div className="flex justify-between items-start pb-2 border-b border-slate-200 dark:border-slate-700">
+                <div>
+                  <h3 className="font-black text-base uppercase text-slate-900 dark:text-white">{settings.storeName}</h3>
+                  <p className="text-[11px] text-slate-500">Owner: {settings.ownerName}</p>
+                </div>
+                <span className="text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300">
+                  {reportModalPeriod.toUpperCase()} REPORT
+                </span>
+              </div>
+
+              {(() => {
+                const summary = calculatePeriodSummary(transactions, settings);
+                const periodLabel = reportModalPeriod === 'daily' ? 'Today' : reportModalPeriod === 'weekly' ? 'This Week' : 'Filtered Selection';
+                const s = reportModalPeriod === 'daily' ? summary.today : reportModalPeriod === 'weekly' ? summary.weekly : {
+                  totalSales: stats.totalSales,
+                  cashSales: stats.totalCashSales,
+                  profit: stats.totalProfit,
+                  homeMaintenanceSpent: stats.totalHomeMaintenanceSpent,
+                };
+
+                return (
+                  <div className="space-y-2 text-xs">
+                    <div className="flex justify-between py-1 border-b border-slate-200/60 dark:border-slate-700/60">
+                      <span className="text-slate-500">Total Sales</span>
+                      <span className="font-extrabold text-blue-600 dark:text-blue-400">{formatCurrency(s.totalSales || 0, settings.currency)}</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-slate-200/60 dark:border-slate-700/60">
+                      <span className="text-slate-500">Cash Sales</span>
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(s.cashSales || 0, settings.currency)}</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-slate-200/60 dark:border-slate-700/60 bg-emerald-50 dark:bg-emerald-950/40 p-2 rounded-xl">
+                      <span className="font-bold text-emerald-900 dark:text-emerald-200">Net Earned Profit</span>
+                      <span className="font-black text-emerald-600 dark:text-emerald-300 font-mono text-sm">{formatCurrency(s.profit || 0, settings.currency)}</span>
+                    </div>
+                    <div className="flex justify-between py-1 text-amber-600 dark:text-amber-400 font-semibold">
+                      <span>Household Spent</span>
+                      <span>{formatCurrency(s.homeMaintenanceSpent || 0, settings.currency)}</span>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Export & Action Buttons */}
+            <div className="grid grid-cols-2 gap-2 pt-2">
+              <button
+                onClick={() => {
+                  exportReportToPDF('history-modal-report-card', `${reportModalPeriod}_history_report`);
+                  showToast('Exporting PDF...', 'Download starting');
+                }}
+                className="py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-2xl shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Download className="w-4 h-4" /> Download PDF
+              </button>
+
+              <button
+                onClick={() => {
+                  const pMap = { daily: 'Daily', weekly: 'Weekly', custom: 'Monthly' } as const;
+                  const txt = generateTextReport(pMap[reportModalPeriod || 'daily'], transactions, settings);
+                  navigator.clipboard.writeText(txt);
+                  setCopiedReport(true);
+                  showToast('Report Copied', 'Copied text report to clipboard');
+                  setTimeout(() => setCopiedReport(false), 3000);
+                }}
+                className="py-3 bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-xs rounded-2xl shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                {copiedReport ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                {copiedReport ? 'Copied!' : 'Copy Text'}
+              </button>
+            </div>
           </div>
         </div>
       )}
