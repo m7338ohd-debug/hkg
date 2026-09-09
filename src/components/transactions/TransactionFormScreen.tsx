@@ -417,6 +417,84 @@ export const TransactionFormScreen: React.FC<TransactionFormScreenProps> = ({
                   <CheckCircle2 className="w-4 h-4" /> APPLY TOTAL & AUTO-FILL NOTES
                 </button>
               </div>
+
+              {/* Instant WhatsApp / SMS Sharing from Calculator */}
+              {(calcItemList.length > 0 || notes.trim()) && (
+                <div className="pt-2 border-t border-purple-200/60 dark:border-purple-800/60 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const store = settings.storeName || 'Ayesha Provision Store';
+                      const cName = customerName.trim() || 'Valued Customer';
+                      let itemsSum = calcItemList.reduce((sum, item) => sum + item.total, 0);
+                      const sPrice = parseFloat(calcPrice) || 0;
+                      const sQty = parseFloat(calcQty) || 1;
+                      if (sPrice > 0) itemsSum += sPrice * sQty;
+                      const totalAmt = itemsSum > 0 ? itemsSum : (parseFloat(amount) || 0);
+
+                      let msg = `📄 *UDHAR BILL RECEIPT*\n🏪 *${store}*\n👤 Customer: ${cName}\n------------------------------\n`;
+                      if (calcItemList.length > 0) {
+                        calcItemList.forEach((item, idx) => {
+                          msg += `${idx + 1}. ${item.name} (${item.qty} × ${settings.currency}${item.price}) = ${settings.currency}${item.total}\n`;
+                        });
+                        if (sPrice > 0) {
+                          const name = calcItemName.trim() || `Item ${calcItemList.length + 1}`;
+                          msg += `${calcItemList.length + 1}. ${name} (${sQty} × ${settings.currency}${sPrice}) = ${settings.currency}${sPrice * sQty}\n`;
+                        }
+                      } else if (notes.trim()) {
+                        msg += `📝 Items:\n${notes}\n`;
+                      }
+                      msg += `------------------------------\n💰 *Total Bill: ${formatCurrency(totalAmt, settings.currency)}*\n🙏 Thank you!`;
+
+                      const cleanP = phone ? phone.replace(/[^0-9]/g, '') : '';
+                      const waP = cleanP.length === 10 ? `91${cleanP}` : cleanP;
+                      const waUrl = waP
+                        ? `https://api.whatsapp.com/send?phone=${waP}&text=${encodeURIComponent(msg)}`
+                        : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+                      window.open(waUrl, '_blank');
+                      showToast('WhatsApp Opened', 'Sharing POS itemized receipt');
+                    }}
+                    className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-[11px] rounded-xl flex items-center justify-center gap-1 cursor-pointer transition-all shadow-xs"
+                  >
+                    <Send className="w-3.5 h-3.5" /> 📱 Share WA Receipt
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const store = settings.storeName || 'Ayesha Provision Store';
+                      const cName = customerName.trim() || 'Valued Customer';
+                      let itemsSum = calcItemList.reduce((sum, item) => sum + item.total, 0);
+                      const sPrice = parseFloat(calcPrice) || 0;
+                      const sQty = parseFloat(calcQty) || 1;
+                      if (sPrice > 0) itemsSum += sPrice * sQty;
+                      const totalAmt = itemsSum > 0 ? itemsSum : (parseFloat(amount) || 0);
+
+                      let msg = `📄 UDHAR BILL RECEIPT\n🏪 ${store}\n👤 Customer: ${cName}\n------------------------------\n`;
+                      if (calcItemList.length > 0) {
+                        calcItemList.forEach((item, idx) => {
+                          msg += `${idx + 1}. ${item.name} (${item.qty} × ${settings.currency}${item.price}) = ${settings.currency}${item.total}\n`;
+                        });
+                        if (sPrice > 0) {
+                          const name = calcItemName.trim() || `Item ${calcItemList.length + 1}`;
+                          msg += `${calcItemList.length + 1}. ${name} (${sQty} × ${settings.currency}${sPrice}) = ${settings.currency}${sPrice * sQty}\n`;
+                        }
+                      } else if (notes.trim()) {
+                        msg += `📝 Items:\n${notes}\n`;
+                      }
+                      msg += `------------------------------\n💰 Total Bill: ${formatCurrency(totalAmt, settings.currency)}\n🙏 Thank you!`;
+
+                      const cleanP = phone ? phone.replace(/[^0-9]/g, '') : '';
+                      const smsUrl = cleanP ? `sms:${cleanP}?body=${encodeURIComponent(msg)}` : `sms:?body=${encodeURIComponent(msg)}`;
+                      window.location.href = smsUrl;
+                      showToast('SMS Opened', 'Preparing SMS receipt');
+                    }}
+                    className="flex-1 py-2 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-[11px] rounded-xl flex items-center justify-center gap-1 cursor-pointer transition-all shadow-xs"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" /> 💬 Share SMS
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
