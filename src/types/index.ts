@@ -121,6 +121,20 @@ export interface FamilyIncomeEntry {
   createdAt: number;
 }
 
+export interface InvestmentRecord {
+  id: string;
+  title: string;
+  capital: number;
+  profitMode: 'percent' | 'amount';
+  profitValue: number;
+  predictedProfit: number;
+  totalReturn: number;
+  status: 'active' | 'completed';
+  date: string;
+  notes?: string;
+  createdAt: number;
+}
+
 export interface DateFilterOption {
   label: string;
   value: 'today' | 'yesterday' | 'this_week' | 'this_month' | 'custom' | 'all';

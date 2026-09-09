@@ -1,7 +1,6 @@
-import React from 'react';
-import { Store, Moon, Sun, RefreshCw, Radio, Smartphone, LogIn, UserCheck, LogOut, Settings } from 'lucide-react';
+import React, { useState } from 'react';
+import { Store, Moon, Sun, RefreshCw, Radio, Smartphone, UserCheck, LogOut, Settings, MoreVertical, X } from 'lucide-react';
 import { useCashFlow } from '../../context/CashFlowContext';
-import { formatCurrency } from '../../utils/calculations';
 
 interface HeaderProps {
   onOpenQuickForm?: (type: string) => void;
@@ -12,13 +11,14 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ onOpenDownloadApp, onOpenLoginModal, onOpenSettings }) => {
   const { settings, toggleDarkMode, isSyncing, syncNow, logoutStore } = useCashFlow();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const activeUserLabel = settings.activeUser || 'Owner / Ayesha';
   const syncCodeLabel = settings.storeSyncCode || 'AYESHA-STORE-01';
 
   return (
-    <header className="sticky top-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-3 sm:px-6 py-2 shadow-xs safe-top-padding w-full overflow-hidden">
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 w-full">
+    <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-3 sm:px-6 py-2 shadow-xs safe-top-padding w-full">
+      <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 w-full relative">
         {/* Store Title & Owner - Clickable to open Settings */}
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <button
@@ -34,21 +34,13 @@ export const Header: React.FC<HeaderProps> = ({ onOpenDownloadApp, onOpenLoginMo
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <h1 className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-base leading-tight tracking-tight truncate max-w-[100px] xs:max-w-[140px] sm:max-w-xs group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                <h1 className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-base leading-tight tracking-tight truncate max-w-[130px] xs:max-w-[170px] sm:max-w-xs group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
                   {settings.storeName}
                 </h1>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (onOpenLoginModal) onOpenLoginModal();
-                  }}
-                  className="hidden md:inline-flex items-center gap-1 text-[10px] font-extrabold tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/90 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 hover:bg-emerald-200 cursor-pointer transition-all"
-                  title="Active Store Login Session - Tap to manage"
-                >
+                <span className="inline-flex items-center gap-1 text-[9px] font-extrabold tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/90 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 shrink-0">
                   <UserCheck className="w-3 h-3 text-emerald-500" />
-                  <span className="truncate max-w-[110px]">{activeUserLabel}</span>
-                </button>
+                  <span className="truncate max-w-[90px]">{activeUserLabel}</span>
+                </span>
               </div>
               <p className="text-[9px] sm:text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
                 <span className="font-mono text-emerald-600 dark:text-emerald-400 font-extrabold truncate max-w-[110px] sm:max-w-[180px]">{syncCodeLabel}</span>
@@ -58,62 +50,127 @@ export const Header: React.FC<HeaderProps> = ({ onOpenDownloadApp, onOpenLoginMo
           </button>
         </div>
 
-        {/* Right Action Widgets */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          {/* Mobile App Download Button */}
-          {onOpenDownloadApp && (
-            <button
-              onClick={onOpenDownloadApp}
-              className="p-1.5 sm:px-3 sm:py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs shadow-md shadow-emerald-600/20 cursor-pointer active:scale-95 transition-all flex items-center gap-1"
-              title="Download & Install Mobile App"
-            >
-              <Smartphone className="w-4 h-4" />
-              <span className="hidden md:inline">Install App</span>
-            </button>
-          )}
-
-          {/* Store Device Connection Button */}
-          {onOpenLoginModal && (
-            <button
-              onClick={onOpenLoginModal}
-              className="p-1.5 sm:px-3 sm:py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 font-extrabold text-xs border border-slate-200 dark:border-slate-700 cursor-pointer active:scale-95 transition-all flex items-center gap-1"
-              title="Multi-Device Connection & Data Sync Page"
-            >
-              <Radio className="w-4 h-4 text-emerald-500 animate-pulse" />
-              <span className="hidden sm:inline">Connect Devices</span>
-            </button>
-          )}
-
-          {/* Prominent Logout Button */}
+        {/* Right 3-Dots Vertical Menu Trigger */}
+        <div className="relative shrink-0">
           <button
-            onClick={logoutStore}
-            className="p-1.5 sm:px-3 sm:py-2 rounded-xl bg-red-50 dark:bg-red-950/60 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/80 border border-red-200 dark:border-red-800/80 font-black text-xs cursor-pointer active:scale-95 transition-all flex items-center gap-1"
-            title="Logout of Store Session"
-          >
-            <LogOut className="w-4 h-4 text-red-500" />
-            <span className="hidden sm:inline">Logout</span>
-          </button>
-
-          {/* Quick Sync Button */}
-          <button
-            onClick={syncNow}
-            className={`p-1.5 sm:p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer ${
-              isSyncing ? 'animate-spin text-emerald-500' : ''
+            onClick={() => setIsMenuOpen((prev) => !prev)}
+            className={`p-2 rounded-xl transition-all cursor-pointer border ${
+              isMenuOpen
+                ? 'bg-emerald-600 text-white border-emerald-500 shadow-md'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
-            title="Sync store data with cloud"
+            title="More Options"
+            aria-label="More Options Menu"
           >
-            <RefreshCw className="w-4 h-4 sm:w-4 sm:h-4" />
+            {isMenuOpen ? <X className="w-5 h-5" /> : <MoreVertical className="w-5 h-5" />}
           </button>
 
-          {/* Theme Switcher */}
-          <button
-            onClick={toggleDarkMode}
-            className="p-1.5 sm:p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
-            title="Toggle Dark/Light Mode"
-            aria-label="Toggle Theme"
-          >
-            {settings.darkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
-          </button>
+          {/* Vertical Dropdown Action List */}
+          {isMenuOpen && (
+            <>
+              {/* Backdrop Overlay */}
+              <div
+                className="fixed inset-0 z-40 bg-black/20 backdrop-blur-xs"
+                onClick={() => setIsMenuOpen(false)}
+              />
+
+              <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-50 p-2 space-y-1 animate-in fade-in zoom-in-95 duration-150 text-slate-900 dark:text-white">
+                <div className="p-2 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase text-slate-400">Store Quick Menu</span>
+                  <span className="text-[10px] font-bold text-emerald-500 flex items-center gap-1">
+                    <UserCheck className="w-3 h-3" /> {activeUserLabel}
+                  </span>
+                </div>
+
+                {/* Connect Devices */}
+                {onOpenLoginModal && (
+                  <button
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      onOpenLoginModal();
+                    }}
+                    className="w-full p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-xs flex items-center gap-2.5 text-left transition-colors cursor-pointer"
+                  >
+                    <Radio className="w-4 h-4 text-emerald-500 animate-pulse" />
+                    <span>Connect Devices</span>
+                  </button>
+                )}
+
+                {/* Download / Install App */}
+                {onOpenDownloadApp && (
+                  <button
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      onOpenDownloadApp();
+                    }}
+                    className="w-full p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-xs flex items-center gap-2.5 text-left transition-colors cursor-pointer"
+                  >
+                    <Smartphone className="w-4 h-4 text-teal-500" />
+                    <span>Install Mobile App</span>
+                  </button>
+                )}
+
+                {/* Quick Cloud Sync */}
+                <button
+                  onClick={() => {
+                    syncNow();
+                  }}
+                  className="w-full p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-xs flex items-center gap-2.5 text-left transition-colors cursor-pointer"
+                >
+                  <RefreshCw className={`w-4 h-4 text-blue-500 ${isSyncing ? 'animate-spin' : ''}`} />
+                  <span>Sync Cloud Data</span>
+                </button>
+
+                {/* Toggle Dark / Light Theme */}
+                <button
+                  onClick={() => {
+                    toggleDarkMode();
+                  }}
+                  className="w-full p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-xs flex items-center gap-2.5 text-left transition-colors cursor-pointer"
+                >
+                  {settings.darkMode ? (
+                    <>
+                      <Sun className="w-4 h-4 text-amber-400" />
+                      <span>Light Mode</span>
+                    </>
+                  ) : (
+                    <>
+                      <Moon className="w-4 h-4 text-indigo-500" />
+                      <span>Dark Mode</span>
+                    </>
+                  )}
+                </button>
+
+                {/* Store Settings */}
+                {onOpenSettings && (
+                  <button
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      onOpenSettings();
+                    }}
+                    className="w-full p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-xs flex items-center gap-2.5 text-left transition-colors cursor-pointer"
+                  >
+                    <Settings className="w-4 h-4 text-purple-500" />
+                    <span>Store Settings</span>
+                  </button>
+                )}
+
+                {/* Logout Button */}
+                <div className="pt-1 border-t border-slate-100 dark:border-slate-800">
+                  <button
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      logoutStore();
+                    }}
+                    className="w-full p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/80 font-extrabold text-xs flex items-center gap-2.5 text-left transition-colors cursor-pointer"
+                  >
+                    <LogOut className="w-4 h-4 text-rose-500" />
+                    <span>Logout Store</span>
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </header>

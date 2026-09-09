@@ -877,7 +877,7 @@ Your small cards, 3D floating cubes, multi-attribute graphs, and 30-day expandab
               <XAxis dataKey="day" tick={{ fontSize: 10, fontWeight: 700 }} stroke="#64748b" />
               <YAxis tick={{ fontSize: 9 }} stroke="#64748b" tickFormatter={(v) => `₹${v}`} />
               <Tooltip
-                formatter={(value: any, name: string) => [
+                formatter={(value: any, name: any) => [
                   `₹${value}`,
                   name === 'salesInflow'
                     ? 'Total Cash Sales Flow'

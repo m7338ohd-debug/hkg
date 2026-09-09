@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Smartphone,
   X,
   Download,
   CheckCircle2,
@@ -8,7 +7,6 @@ import {
   PlusSquare,
   QrCode,
   Sparkles,
-  ExternalLink,
   ShieldCheck,
   Copy,
   Check,
@@ -25,7 +23,7 @@ interface DownloadAppModalProps {
 }
 
 export const DownloadAppModal: React.FC<DownloadAppModalProps> = ({ isOpen, onClose }) => {
-  const { isInstallable, isInstalled, isIOS, isAndroid, promptInstall } = usePWAInstall();
+  const { isInstallable, isInstalled, promptInstall } = usePWAInstall();
   const { showToast } = useCashFlow();
 
   const [currentUrl, setCurrentUrl] = useState('');

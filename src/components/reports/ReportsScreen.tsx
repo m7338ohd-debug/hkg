@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Download, Share2, Printer, Calendar, FileText, Check, Copy, SlidersHorizontal } from 'lucide-react';
+import { Download, Check, Copy } from 'lucide-react';
 import { useCashFlow } from '../../context/CashFlowContext';
-import { formatCurrency, formatDateDisplay, calculatePeriodSummary, getTodayDateString } from '../../utils/calculations';
+import { formatCurrency, formatDateDisplay, calculatePeriodSummary, getTodayDateString, calculateSummary } from '../../utils/calculations';
 import { exportReportToPDF, generateTextReport } from '../../utils/pdfExport';
 
 export const ReportsScreen: React.FC = () => {
@@ -30,6 +30,7 @@ export const ReportsScreen: React.FC = () => {
   const customTotalCashSales = filteredCustomTxs.filter((t) => t.type === 'cash_sale').reduce((sum, t) => sum + t.amount, 0);
   const customCreditSales = filteredCustomTxs.filter((t) => t.type === 'credit_sale').reduce((sum, t) => sum + t.amount, 0);
   const customHomeUse = filteredCustomTxs.filter((t) => t.type === 'home_use').reduce((sum, t) => sum + t.amount, 0);
+  const customWithdrawals = customHomeUse;
   const customTotalSales = customTotalCashSales + customCreditSales + customHomeUse;
   const customCreditReceived = filteredCustomTxs.filter((t) => t.type === 'credit_payment').reduce((sum, t) => sum + t.amount, 0);
   const customPurchases = filteredCustomTxs.filter((t) => t.type === 'purchase').reduce((sum, t) => sum + t.amount, 0);
@@ -46,8 +47,8 @@ export const ReportsScreen: React.FC = () => {
   };
 
   const handleCopyTextReport = () => {
-    const periodMap = { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly' } as const;
-    const text = generateTextReport(periodMap[activeTab], transactions, settings);
+    const periodMap: Record<string, 'Daily' | 'Weekly' | 'Monthly'> = { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly', custom: 'Daily' };
+    const text = generateTextReport(periodMap[activeTab] || 'Daily', transactions, settings);
     navigator.clipboard.writeText(text);
     setCopied(true);
     showToast('Copied to Clipboard', 'You can paste and share via WhatsApp or SMS');

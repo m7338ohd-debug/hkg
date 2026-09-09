@@ -1,18 +1,14 @@
 import React, { useState } from 'react';
 import {
   LogIn,
-  KeyRound,
   User,
   X,
-  CheckCircle2,
   RefreshCw,
-  Smartphone,
   ShieldCheck,
   Sparkles,
   Users,
   Copy,
   Check,
-  Share2,
   Zap,
   Radio,
 } from 'lucide-react';
@@ -30,7 +26,6 @@ export const StoreLoginModal: React.FC<StoreLoginModalProps> = ({ isOpen, onClos
   const [activeTab, setActiveTab] = useState<'connect' | 'generate'>('connect');
   const [inputCode, setInputCode] = useState(settings.storeSyncCode || 'AYESHA-STORE-01');
   const [selectedUser, setSelectedUser] = useState(settings.activeUser || 'Owner / Ayesha');
-  const [customUser, setCustomUser] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
 
@@ -76,7 +71,7 @@ export const StoreLoginModal: React.FC<StoreLoginModalProps> = ({ isOpen, onClos
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanCode = sanitizeSyncCode(inputCode);
-    const userName = selectedUser === 'Other' ? customUser.trim() || 'Store Member' : selectedUser;
+    const userName = selectedUser || 'Store Member';
 
     if (!cleanCode) {
       showToast('Invalid Code', 'Please enter a store sync connection code', 'error');

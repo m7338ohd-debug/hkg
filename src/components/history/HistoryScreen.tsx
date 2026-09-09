@@ -762,14 +762,15 @@ export const HistoryScreen: React.FC = () => {
               {(() => {
                 const store = settings.storeName || 'Ayesha Provision Store';
                 const name = txForMsg.customerName || 'Customer';
-                const msgText = `Greetings ${name} from ${store}! Transaction of ${settings.currency}${txForMsg.amount} (${txForMsg.type.replace('_', ' ')}) on ${formatDateDisplay(txForMsg.date)} has been logged. Thank you!`;
+                const notesBlock = txForMsg.notes ? `\n\n📦 Item Breakdown:\n${txForMsg.notes}\n` : '';
+                const msgText = `Greetings ${name} from ${store}!\nTransaction of ${settings.currency}${txForMsg.amount} (${txForMsg.type.replace('_', ' ')}) on ${formatDateDisplay(txForMsg.date)} has been logged.${notesBlock}\nTotal Amount: ${settings.currency}${txForMsg.amount}\nThank you!`;
                 const cleanPhone = txForMsg.phone ? txForMsg.phone.replace(/[^0-9]/g, '') : '';
                 const waPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
 
                 return (
                   <div className="space-y-3">
-                    <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-mono">
-                      "{msgText}"
+                    <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-mono whitespace-pre-wrap">
+                      {msgText}
                     </div>
 
                     <div className="grid grid-cols-2 gap-2">

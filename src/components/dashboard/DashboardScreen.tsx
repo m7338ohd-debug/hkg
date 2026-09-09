@@ -14,8 +14,6 @@ import {
   Users,
   Search,
   MessageSquare,
-  Send,
-  PlusCircle,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -42,7 +40,7 @@ interface DashboardScreenProps {
 }
 
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab, onQuickFormLaunch }) => {
-  const { transactions, settings, addTransaction } = useCashFlow();
+  const { transactions, settings, addTransaction, showToast } = useCashFlow();
   const [chartTimeframe, setChartTimeframe] = useState<'7days' | '14days' | '30days'>('7days');
   const [selectedChart, setSelectedChart] = useState<'cashflow' | 'profit' | 'expenses'>('cashflow');
 
@@ -64,6 +62,29 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab, 
   const handleOpenReminderModal = (cust: CustomerCreditSummary, tab: 'reminder' | 'adjustment' = 'reminder') => {
     setReminderTarget(cust);
     setReminderInitialTab(tab);
+  };
+
+  const handleConfirmCollect = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!collectTarget) return;
+    const amt = parseFloat(customCollectAmount);
+    if (!amt || amt <= 0) {
+      showToast('Invalid Amount', 'Please enter a valid payment amount', 'error');
+      return;
+    }
+    addTransaction({
+      type: 'credit_payment',
+      amount: amt,
+      category: 'Udhar Collected',
+      paymentMethod: payMethod,
+      customerName: collectTarget.customerName,
+      phone: collectTarget.phone,
+      date: getTodayDateString(),
+      notes: `Udhar payment received via ${payMethod}`,
+    });
+    showToast('Payment Recorded', `Received ${formatCurrency(amt, settings.currency)} from ${collectTarget.customerName}`);
+    setCollectTarget(null);
+    setCustomCollectAmount('');
   };
 
   const periodSummary = calculatePeriodSummary(transactions, settings);
@@ -591,7 +612,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab, 
                 <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#94a3b8' }} />
                 <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} />
                 <Tooltip
-                  formatter={(val: number) => formatCurrency(val, settings.currency)}
+                  formatter={(val: any) => formatCurrency(Number(val) || 0, settings.currency)}
                   contentStyle={{ backgroundColor: '#0f172a', borderRadius: '12px', border: 'none', color: '#fff', fontSize: '12px' }}
                 />
                 <Bar dataKey="cashIn" name="Cash Received (+)" fill="#10b981" radius={[6, 6, 0, 0]} />
@@ -609,7 +630,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ setActiveTab, 
                 <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#94a3b8' }} />
                 <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} />
                 <Tooltip
-                  formatter={(val: number) => formatCurrency(val, settings.currency)}
+                  formatter={(val: any) => formatCurrency(Number(val) || 0, settings.currency)}
                   contentStyle={{ backgroundColor: '#0f172a', borderRadius: '12px', border: 'none', color: '#fff', fontSize: '12px' }}
                 />
                 <Area type="monotone" dataKey="profit" name="Daily Profit" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#profitGrad)" />

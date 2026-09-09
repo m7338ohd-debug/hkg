@@ -1,4 +1,4 @@
-import type { Transaction, StoreSettings } from '../types';
+import type { Transaction, StoreSettings, InvestmentRecord } from '../types';
 
 const TRANSACTIONS_KEY = 'provision_store_cashflow_transactions';
 const TRANSACTIONS_VAULT_KEY = 'provision_store_cashflow_transactions_vault';
@@ -14,6 +14,9 @@ const FAMILY_INCOME_VAULT_KEY = 'provision_store_family_income_vault';
 
 const FIXED_MONTHLY_KEY = 'provision_store_fixed_monthly_expenses';
 const FIXED_MONTHLY_VAULT_KEY = 'provision_store_fixed_monthly_expenses_vault';
+
+const INVESTMENT_RECORDS_KEY = 'provision_store_investment_records';
+const INVESTMENT_RECORDS_VAULT_KEY = 'provision_store_investment_records_vault';
 
 const DEVICE_ID_KEY = 'provision_store_device_id';
 
@@ -301,6 +304,32 @@ export const saveFixedMonthlyExpenses = (entries: any[]): void => {
     }
   } catch (e) {
     console.error('Error saving fixed monthly expenses data', e);
+  }
+};
+
+export const loadInvestmentRecords = (): InvestmentRecord[] => {
+  try {
+    const raw = localStorage.getItem(INVESTMENT_RECORDS_KEY);
+    const rawVault = localStorage.getItem(INVESTMENT_RECORDS_VAULT_KEY);
+    const targetRaw = raw || rawVault;
+    if (!targetRaw) return [];
+    const parsed = JSON.parse(targetRaw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    console.error('Error loading investment records', e);
+    return [];
+  }
+};
+
+export const saveInvestmentRecords = (entries: InvestmentRecord[]) => {
+  try {
+    const json = JSON.stringify(entries);
+    localStorage.setItem(INVESTMENT_RECORDS_KEY, json);
+    if (Array.isArray(entries) && entries.length > 0) {
+      localStorage.setItem(INVESTMENT_RECORDS_VAULT_KEY, json);
+    }
+  } catch (e) {
+    console.error('Error saving investment records', e);
   }
 };
 

@@ -10,8 +10,6 @@ import {
   Copy,
   Check,
   HandCoins,
-  Sparkles,
-  ExternalLink,
   ShieldCheck,
 } from 'lucide-react';
 import { useCashFlow } from '../../context/CashFlowContext';
@@ -30,7 +28,7 @@ export const UdharReminderModal: React.FC<UdharReminderModalProps> = ({
   targetCustomer,
   initialTab = 'reminder',
 }) => {
-  const { settings, addTransaction, showToast } = useCashFlow();
+  const { transactions, settings, addTransaction, showToast } = useCashFlow();
 
   const [activeTab, setActiveTab] = useState<'reminder' | 'adjustment'>(initialTab);
   const [customerName, setCustomerName] = useState('');
@@ -56,8 +54,23 @@ export const UdharReminderModal: React.FC<UdharReminderModalProps> = ({
   const storeName = settings.storeName || 'Ayesha Provision Store';
   const currency = settings.currency || '₹';
 
+  // Find recent credit sales for this customer to list itemized details
+  const custCreditTxs = transactions
+    .filter(
+      (t) => t.customerName && t.customerName.toLowerCase() === customerName.toLowerCase() && t.type === 'credit_sale'
+    )
+    .slice(-3);
+
+  const itemsDetail =
+    custCreditTxs.length > 0
+      ? `\n\nRecent Udhar Items:\n` +
+        custCreditTxs
+          .map((t) => `• ${t.date}: ${t.notes ? t.notes : `${currency}${t.amount}`}`)
+          .join('\n')
+      : '';
+
   // Format Reminder Message Text
-  const reminderMessage = `Dear ${customerName}, greetings from ${storeName}! Your total outstanding Udhar balance is ${currency}${currentDue.toLocaleString('en-IN')}. Kindly settle the payment via UPI or Cash. Thank you!`;
+  const reminderMessage = `Dear ${customerName}, greetings from ${storeName}!\nYour total outstanding Udhar balance is ${currency}${currentDue.toLocaleString('en-IN')}.${itemsDetail}\n\nKindly settle the payment via UPI or Cash. Thank you!`;
 
   const cleanPhone = phone.replace(/[^0-9]/g, '');
 
@@ -216,7 +229,7 @@ export const UdharReminderModal: React.FC<UdharReminderModalProps> = ({
                   </button>
                 </div>
 
-                <div className="p-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-medium text-slate-700 dark:text-slate-300 space-y-1 leading-relaxed">
+                <div className="p-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-medium text-slate-700 dark:text-slate-300 space-y-1 leading-relaxed font-mono whitespace-pre-wrap">
                   <p>{reminderMessage}</p>
                 </div>
               </div>

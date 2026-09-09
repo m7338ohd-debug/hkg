@@ -1,26 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Home,
   Users,
   PlusCircle,
   Trash2,
-  Calendar,
   X,
   CheckCircle2,
   Wrench,
-  Receipt,
-  HeartPulse,
-  ShoppingBag,
-  Sparkles,
-  DollarSign,
   Briefcase,
-  Building,
-  UserCheck,
   CalendarCheck,
+  Check,
+  Plus,
 } from 'lucide-react';
 import { useCashFlow } from '../../context/CashFlowContext';
 import { formatCurrency, getTodayDateString, formatDateDisplay } from '../../utils/calculations';
-import type { HomeMaintenanceEntry, FamilyIncomeEntry, FixedMonthlyExpenseEntry } from '../../types';
+import type { HomeMaintenanceEntry, FamilyIncomeEntry, FixedMonthlyExpenseEntry, InvestmentRecord } from '../../types';
+import { loadInvestmentRecords, saveInvestmentRecords } from '../../db/storage';
 
 export const HomeFamilyScreen: React.FC = () => {
   const {
@@ -34,9 +29,22 @@ export const HomeFamilyScreen: React.FC = () => {
     addFixedMonthlyExpense,
     deleteFixedMonthlyExpense,
     settings,
+    showToast,
   } = useCashFlow();
 
   const [activeTab, setActiveTab] = useState<'maintenance' | 'fixed_monthly' | 'earnings'>('maintenance');
+
+  // Investment & Profit Predictor Persistent State (Standalone - Not linked to daily sales)
+  const [investmentRecords, setInvestmentRecords] = useState<InvestmentRecord[]>(() => loadInvestmentRecords());
+  const [investTitle, setInvestTitle] = useState<string>('');
+  const [investCapital, setInvestCapital] = useState<string>('50000');
+  const [investProfitMode, setInvestProfitMode] = useState<'percent' | 'amount'>('percent');
+  const [investProfitInput, setInvestProfitInput] = useState<string>('15');
+  const [investNotes, setInvestNotes] = useState<string>('');
+
+  useEffect(() => {
+    saveInvestmentRecords(investmentRecords);
+  }, [investmentRecords]);
 
   // Modals
   const [isMaintenanceModalOpen, setIsMaintenanceModalOpen] = useState(false);
@@ -62,10 +70,76 @@ export const HomeFamilyScreen: React.FC = () => {
   const [iNotes, setINotes] = useState<string>('');
   const [iDate, setIDate] = useState<string>(getTodayDateString());
 
-  // Daily Maintenance Spent (Only daily usage goods, NOT fixed monthly Commitments)
+  // Daily Maintenance Spent
   const totalMaintenanceSpent = homeMaintenanceList.reduce((sum, item) => sum + item.amount, 0);
   const totalFixedMonthlyRequired = fixedMonthlyList.reduce((sum, item) => sum + item.amount, 0);
   const totalFamilyIncome = familyIncomeList.reduce((sum, item) => sum + item.amount, 0);
+
+  // Investment Predictor Math & Actions
+  const numCapital = parseFloat(investCapital) || 0;
+  const numProfitVal = parseFloat(investProfitInput) || 0;
+  const computedPredictedProfit =
+    investProfitMode === 'percent'
+      ? (numCapital * numProfitVal) / 100
+      : numProfitVal;
+  const computedTotalReturn = numCapital + computedPredictedProfit;
+  const computedRoiPercent =
+    numCapital > 0
+      ? investProfitMode === 'percent'
+        ? numProfitVal
+        : ((numProfitVal / numCapital) * 100)
+      : 0;
+
+  const handleAddInvestmentRecord = () => {
+    if (numCapital <= 0) {
+      showToast('Invalid Capital', 'Please enter a valid investment capital amount', 'error');
+      return;
+    }
+
+    const newRecord: InvestmentRecord = {
+      id: `inv_${Date.now()}`,
+      title: investTitle.trim() || `Investment Capital ${investmentRecords.length + 1}`,
+      capital: numCapital,
+      profitMode: investProfitMode,
+      profitValue: numProfitVal,
+      predictedProfit: computedPredictedProfit,
+      totalReturn: computedTotalReturn,
+      status: 'active',
+      date: getTodayDateString(),
+      notes: investNotes.trim() || undefined,
+      createdAt: Date.now(),
+    };
+
+    setInvestmentRecords((prev) => [newRecord, ...prev]);
+    setInvestTitle('');
+    setInvestNotes('');
+    showToast('Investment Recorded', `Saved ${formatCurrency(numCapital, settings.currency)} capital record`);
+  };
+
+  const handleToggleInvestmentStatus = (id: string) => {
+    setInvestmentRecords((prev) =>
+      prev.map((rec) =>
+        rec.id === id ? { ...rec, status: rec.status === 'active' ? 'completed' : 'active' } : rec
+      )
+    );
+  };
+
+  const handleDeleteInvestmentRecord = (id: string) => {
+    setInvestmentRecords((prev) => prev.filter((rec) => rec.id !== id));
+    showToast('Record Deleted', 'Investment entry removed');
+  };
+
+  const activeInvestmentsTotal = investmentRecords
+    .filter((r) => r.status === 'active')
+    .reduce((sum, r) => sum + r.capital, 0);
+
+  const activeProfitTotal = investmentRecords
+    .filter((r) => r.status === 'active')
+    .reduce((sum, r) => sum + r.predictedProfit, 0);
+
+  const completedInvestmentsTotal = investmentRecords
+    .filter((r) => r.status === 'completed')
+    .reduce((sum, r) => sum + r.totalReturn, 0);
 
   const handleMaintenanceSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -198,6 +272,256 @@ export const HomeFamilyScreen: React.FC = () => {
         </div>
       </div>
 
+      {/* STANDALONE INVESTMENT CAPITAL & PROFIT RECORD TRACKER CARD */}
+      <div className="bg-gradient-to-r from-blue-950 via-slate-900 to-indigo-950 text-white rounded-3xl p-5 shadow-xl border border-blue-500/30 space-y-4 relative overflow-hidden">
+        <div className="flex items-center justify-between pb-3 border-b border-blue-500/20">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2.5 bg-blue-500/20 text-blue-400 rounded-2xl border border-blue-500/30">
+              <Briefcase className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-sm sm:text-base text-white flex items-center gap-2">
+                Investment Capital & Profit Tracker
+                <span className="text-[9px] bg-blue-500/20 text-blue-300 px-2.5 py-0.5 rounded-full border border-blue-500/30 font-mono">
+                  Standalone Records ({investmentRecords.length})
+                </span>
+              </h3>
+              <p className="text-[11px] text-slate-400">Independent capital investment, percentage/amount profit & completion records</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Live Capital Summary Strip */}
+        <div className="grid grid-cols-3 gap-2">
+          <div className="p-2.5 bg-slate-800/80 rounded-2xl border border-slate-700/80">
+            <span className="text-[9px] font-bold text-slate-400 uppercase block">Active Capital</span>
+            <span className="text-sm sm:text-base font-black text-blue-400 font-mono block mt-0.5">
+              {formatCurrency(activeInvestmentsTotal, settings.currency)}
+            </span>
+          </div>
+          <div className="p-2.5 bg-slate-800/80 rounded-2xl border border-slate-700/80">
+            <span className="text-[9px] font-bold text-slate-400 uppercase block">Predicted Profit</span>
+            <span className="text-sm sm:text-base font-black text-emerald-400 font-mono block mt-0.5">
+              {formatCurrency(activeProfitTotal, settings.currency)}
+            </span>
+          </div>
+          <div className="p-2.5 bg-slate-800/80 rounded-2xl border border-slate-700/80">
+            <span className="text-[9px] font-bold text-slate-400 uppercase block">Completed Capital</span>
+            <span className="text-sm sm:text-base font-black text-purple-400 font-mono block mt-0.5">
+              {formatCurrency(completedInvestmentsTotal, settings.currency)}
+            </span>
+          </div>
+        </div>
+
+        {/* Calculator & New Record Form */}
+        <div className="bg-slate-800/60 p-4 rounded-2xl border border-slate-700/60 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-black uppercase tracking-wider text-blue-300">
+              ⚡ Add New Investment Capital & Target Profit
+            </span>
+            {/* Profit Mode Switcher: % Percentage vs ₹ Fixed Amount */}
+            <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-700 gap-1">
+              <button
+                type="button"
+                onClick={() => setInvestProfitMode('percent')}
+                className={`px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
+                  investProfitMode === 'percent'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                % Percentage
+              </button>
+              <button
+                type="button"
+                onClick={() => setInvestProfitMode('amount')}
+                className={`px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
+                  investProfitMode === 'amount'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                {settings.currency} Fixed Amount
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
+                Investment Title / Purpose
+              </label>
+              <input
+                type="text"
+                value={investTitle}
+                onChange={(e) => setInvestTitle(e.target.value)}
+                placeholder="e.g. Stock Purchase, Shop Upgrade"
+                className="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs font-bold text-white focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
+                Investment Capital Amount ({settings.currency})
+              </label>
+              <input
+                type="number"
+                step="any"
+                value={investCapital}
+                onChange={(e) => setInvestCapital(e.target.value)}
+                placeholder="e.g. 50000"
+                className="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm font-black text-blue-400 font-mono focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
+                {investProfitMode === 'percent'
+                  ? 'Target Profit Rate (%)'
+                  : `Target Profit Amount (${settings.currency})`}
+              </label>
+              <input
+                type="number"
+                step="any"
+                value={investProfitInput}
+                onChange={(e) => setInvestProfitInput(e.target.value)}
+                placeholder={investProfitMode === 'percent' ? 'e.g. 15' : 'e.g. 7500'}
+                className="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm font-black text-emerald-400 font-mono focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
+                Investment Notes / Remarks (Optional)
+              </label>
+              <input
+                type="text"
+                value={investNotes}
+                onChange={(e) => setInvestNotes(e.target.value)}
+                placeholder="e.g. Expected return in 30 days"
+                className="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs font-medium text-white focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          {/* Live Calculation Preview & Save Button */}
+          <div className="pt-2 border-t border-slate-700/60 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-4 text-xs">
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 block">Predicted Profit:</span>
+                <span className="font-mono text-emerald-400 font-black text-sm">
+                  +{formatCurrency(computedPredictedProfit, settings.currency)} ({computedRoiPercent.toFixed(1)}%)
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 block">Projected Total Return:</span>
+                <span className="font-mono text-blue-300 font-black text-sm">
+                  {formatCurrency(computedTotalReturn, settings.currency)}
+                </span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleAddInvestmentRecord}
+              className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-xs rounded-xl shadow-lg cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-1.5 shrink-0"
+            >
+              <Plus className="w-4 h-4" /> SAVE INVESTMENT RECORD
+            </button>
+          </div>
+        </div>
+
+        {/* Investment Records Table / Cards List */}
+        {investmentRecords.length > 0 && (
+          <div className="space-y-2 pt-1">
+            <span className="text-[10px] uppercase font-black tracking-wider text-slate-400 block">
+              📋 Recorded Standalone Investments ({investmentRecords.length})
+            </span>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {investmentRecords.map((rec) => {
+                const isCompleted = rec.status === 'completed';
+                return (
+                  <div
+                    key={rec.id}
+                    className={`p-3.5 rounded-2xl border transition-all space-y-2 ${
+                      isCompleted
+                        ? 'bg-slate-900/90 border-slate-700/80 opacity-80'
+                        : 'bg-slate-800/90 border-blue-500/40 shadow-md'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold border ${
+                              isCompleted
+                                ? 'bg-purple-950/80 text-purple-300 border-purple-800'
+                                : 'bg-emerald-950/80 text-emerald-300 border-emerald-800'
+                            }`}
+                          >
+                            {isCompleted ? '✓ Completed / Capital Taken' : '⏳ Active Investment'}
+                          </span>
+                          <span className="text-[9px] text-slate-400">{formatDateDisplay(rec.date)}</span>
+                        </div>
+                        <h4 className="font-extrabold text-xs text-white mt-1">{rec.title}</h4>
+                      </div>
+
+                      <button
+                        onClick={() => handleDeleteInvestmentRecord(rec.id)}
+                        className="p-1 text-slate-400 hover:text-rose-400 cursor-pointer"
+                        title="Delete Record"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 p-2 bg-slate-900/60 rounded-xl border border-slate-700/40 text-xs">
+                      <div>
+                        <span className="text-[9px] text-slate-400 block">Capital Invested</span>
+                        <span className="font-mono font-black text-blue-400 text-xs">
+                          {formatCurrency(rec.capital, settings.currency)}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[9px] text-slate-400 block">
+                          Predicted Profit ({rec.profitMode === 'percent' ? `${rec.profitValue}%` : 'Fixed'})
+                        </span>
+                        <span className="font-mono font-black text-emerald-400 text-xs">
+                          +{formatCurrency(rec.predictedProfit, settings.currency)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {rec.notes && <p className="text-[10px] text-slate-400 italic">"{rec.notes}"</p>}
+
+                    <div className="pt-2 border-t border-slate-700/60 flex items-center justify-between text-xs">
+                      <span className="text-[10px] text-slate-400 font-bold">
+                        Total Projected Return: <strong className="text-white font-mono">{formatCurrency(rec.totalReturn, settings.currency)}</strong>
+                      </span>
+
+                      <button
+                        onClick={() => handleToggleInvestmentStatus(rec.id)}
+                        className={`px-2.5 py-1 rounded-xl text-[10px] font-extrabold cursor-pointer transition-all flex items-center gap-1 ${
+                          isCompleted
+                            ? 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                            : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs'
+                        }`}
+                      >
+                        <Check className="w-3 h-3" />
+                        {isCompleted ? 'Reopen Active' : 'Mark Completed'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Section Switcher Tabs */}
       <div className="grid grid-cols-3 bg-slate-200 dark:bg-slate-800 p-1.5 rounded-2xl gap-1">
         <button
@@ -264,7 +588,7 @@ export const HomeFamilyScreen: React.FC = () => {
               {homeMaintenanceList.filter((item) => item.amount > 1000).length > 0 && (
                 <div className="space-y-2">
                   <span className="text-[10px] uppercase font-black tracking-wider text-amber-500 block px-1">
-                    🌟 Featured 3D Cards (Expenses &gt; ₹1,000)
+                    🌟 Featured 3D Cubic Cards (Major Expenses &gt; ₹1,000)
                   </span>
 
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
@@ -274,24 +598,24 @@ export const HomeFamilyScreen: React.FC = () => {
                         const getCategoryStyle = (cat: string) => {
                           switch (cat) {
                             case 'Groceries & Milk':
-                              return 'from-emerald-600 to-teal-700 border-emerald-400/50 shadow-emerald-950/30';
+                              return 'from-emerald-600 to-teal-800 border-emerald-400/60 shadow-xl shadow-emerald-950/40';
                             case 'Repairs & Fixes':
-                              return 'from-amber-600 to-orange-700 border-amber-400/50 shadow-amber-950/30';
+                              return 'from-amber-600 to-orange-800 border-amber-400/60 shadow-xl shadow-amber-950/40';
                             case 'Utility Bills':
-                              return 'from-blue-600 to-indigo-700 border-blue-400/50 shadow-blue-950/30';
+                              return 'from-blue-600 to-indigo-800 border-blue-400/60 shadow-xl shadow-blue-950/40';
                             case 'Medical & Health':
-                              return 'from-rose-600 to-pink-700 border-rose-400/50 shadow-rose-950/30';
+                              return 'from-rose-600 to-pink-800 border-rose-400/60 shadow-xl shadow-rose-950/40';
                             default:
-                              return 'from-purple-600 to-indigo-700 border-purple-400/50 shadow-purple-950/30';
+                              return 'from-purple-600 to-indigo-800 border-purple-400/60 shadow-xl shadow-purple-950/40';
                           }
                         };
 
                         return (
                           <div
                             key={item.id}
-                            className={`relative p-3 rounded-2xl bg-gradient-to-br ${getCategoryStyle(
+                            className={`relative p-3.5 rounded-2xl bg-gradient-to-br ${getCategoryStyle(
                               item.category
-                            )} shadow-lg border text-white flex flex-col justify-between space-y-2 group overflow-hidden`}
+                            )} border text-white flex flex-col justify-between space-y-2 transition-transform hover:-translate-y-1 hover:shadow-2xl overflow-hidden`}
                           >
                             <div className="flex items-start justify-between relative z-10">
                               <div>
@@ -306,7 +630,7 @@ export const HomeFamilyScreen: React.FC = () => {
 
                               <button
                                 onClick={() => deleteHomeMaintenance(item.id)}
-                                className="p-1 bg-black/20 hover:bg-rose-600 text-white/80 hover:text-white rounded-lg cursor-pointer"
+                                className="p-1 bg-black/20 hover:bg-rose-600 text-white/80 hover:text-white rounded-lg cursor-pointer transition-colors"
                                 title="Delete"
                               >
                                 <Trash2 className="w-3 h-3" />
@@ -326,16 +650,57 @@ export const HomeFamilyScreen: React.FC = () => {
                 </div>
               )}
 
-              {/* SECTION B: SIMPLE COMPACT LIST RECORD FOR AMOUNT <= ₹1,000 */}
-              {homeMaintenanceList.filter((item) => item.amount <= 1000).length > 0 && (
+              {/* SECTION B: MEDIUM 3D CARDS FOR AMOUNT BETWEEN ₹100 AND ₹1,000 */}
+              {homeMaintenanceList.filter((item) => item.amount >= 100 && item.amount <= 1000).length > 0 && (
+                <div className="space-y-2">
+                  <span className="text-[10px] uppercase font-black tracking-wider text-indigo-400 block px-1">
+                    📦 3D Usage Cards (₹100 to ₹1,000)
+                  </span>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {homeMaintenanceList
+                      .filter((item) => item.amount >= 100 && item.amount <= 1000)
+                      .map((item) => (
+                        <div
+                          key={item.id}
+                          className="bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-white p-3 rounded-2xl border border-indigo-500/30 shadow-lg flex flex-col justify-between space-y-1.5"
+                        >
+                          <div className="flex justify-between items-start">
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-indigo-950 text-indigo-300 border border-indigo-500/30 truncate max-w-[100px]">
+                              {item.category}
+                            </span>
+                            <button
+                              onClick={() => deleteHomeMaintenance(item.id)}
+                              className="text-slate-400 hover:text-rose-400 cursor-pointer"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+
+                          <h5 className="font-bold text-xs text-white truncate">{item.notes || item.category}</h5>
+
+                          <div className="flex justify-between items-end pt-1 border-t border-slate-700/60 text-xs">
+                            <span className="text-[9px] text-slate-400">{formatDateDisplay(item.date)}</span>
+                            <span className="font-black text-emerald-400 font-mono">
+                              {formatCurrency(item.amount, settings.currency)}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* SECTION C: COMPACT MANUAL ENTRIES FOR AMOUNT < ₹100 */}
+              {homeMaintenanceList.filter((item) => item.amount < 100).length > 0 && (
                 <div className="bg-white dark:bg-slate-900 rounded-2xl p-3 shadow-md border border-slate-200 dark:border-slate-800 space-y-2">
                   <span className="text-[10px] uppercase font-black text-slate-400 block pb-1 border-b border-slate-100 dark:border-slate-800">
-                    📋 Regular Maintenance & Daily Goods (≤ ₹1,000)
+                    📋 Manual Small Goods Entries (&lt; ₹100)
                   </span>
 
                   <div className="divide-y divide-slate-100 dark:divide-slate-800/80">
                     {homeMaintenanceList
-                      .filter((item) => item.amount <= 1000)
+                      .filter((item) => item.amount < 100)
                       .map((item) => (
                         <div key={item.id} className="py-2 flex items-center justify-between gap-2 text-xs">
                           <div>

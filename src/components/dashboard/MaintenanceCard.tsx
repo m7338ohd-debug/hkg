@@ -5,17 +5,15 @@ import {
   PlusCircle,
   X,
   CheckCircle2,
-  DollarSign,
-  TrendingDown,
   PiggyBank,
   Zap,
 } from 'lucide-react';
 import { useCashFlow } from '../../context/CashFlowContext';
-import { formatCurrency, calculatePeriodSummary, filterTransactionsByDate, filterHomeMaintenanceByDate, getTodayDateString } from '../../utils/calculations';
-import type { WithdrawalPerson } from '../../types';
+import { formatCurrency, filterHomeMaintenanceByDate, getTodayDateString } from '../../utils/calculations';
+import type { HomeMaintenanceEntry } from '../../types';
 
 export const MaintenanceCard: React.FC = () => {
-  const { transactions, homeMaintenanceList, settings, addTransaction, addHomeMaintenance } = useCashFlow();
+  const { homeMaintenanceList, settings, addHomeMaintenance } = useCashFlow();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Form State

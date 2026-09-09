@@ -15,6 +15,7 @@ import {
   MessageSquare,
   Send,
   X,
+  Calculator,
 } from 'lucide-react';
 import { useCashFlow } from '../../context/CashFlowContext';
 import type { TransactionType, PurchaseCategory, ExpenseCategory, WithdrawalPerson, WithdrawalReason, PaymentMethod } from '../../types';
@@ -44,6 +45,14 @@ export const TransactionFormScreen: React.FC<TransactionFormScreenProps> = ({
   const [notes, setNotes] = useState<string>('');
   const [date, setDate] = useState<string>(getTodayDateString());
 
+  // Inline Calculator Helper States
+  const [showCalcHelper, setShowCalcHelper] = useState<boolean>(false);
+  const [calcItemName, setCalcItemName] = useState<string>('');
+  const [calcPrice, setCalcPrice] = useState<string>('');
+  const [calcQty, setCalcQty] = useState<string>('1');
+  const [calcExpression, setCalcExpression] = useState<string>('');
+  const [calcItemList, setCalcItemList] = useState<{ name: string; price: number; qty: number; total: number }[]>([]);
+
   // Saved Transaction Message Modal State
   const [savedTxForMsg, setSavedTxForMsg] = useState<{
     customerName: string;
@@ -51,6 +60,7 @@ export const TransactionFormScreen: React.FC<TransactionFormScreenProps> = ({
     amount: number;
     type: TransactionType;
     date: string;
+    notes?: string;
   } | null>(null);
 
   // Voice Recognition for Customer / Notes
@@ -93,6 +103,7 @@ export const TransactionFormScreen: React.FC<TransactionFormScreenProps> = ({
 
     const savedCustName = customerName.trim();
     const savedCustPhone = phone.trim();
+    const finalNotes = notes.trim();
 
     if ((type === 'credit_sale' || type === 'credit_payment') && !savedCustName) {
       showToast('Customer Name Required', 'Please enter or select a customer name for Udhar transactions', 'error');
@@ -109,7 +120,7 @@ export const TransactionFormScreen: React.FC<TransactionFormScreenProps> = ({
       takenBy: type === 'withdrawal' ? takenBy : undefined,
       reason: type === 'withdrawal' ? reason : undefined,
       paymentMethod: type === 'credit_payment' ? paymentMethod : undefined,
-      notes: notes.trim() || undefined,
+      notes: finalNotes || undefined,
     });
 
     if (shouldOpenMsgModal || savedCustPhone) {
@@ -119,6 +130,7 @@ export const TransactionFormScreen: React.FC<TransactionFormScreenProps> = ({
         amount: numAmount,
         type,
         date,
+        notes: finalNotes || undefined,
       });
     }
 
@@ -201,11 +213,22 @@ export const TransactionFormScreen: React.FC<TransactionFormScreenProps> = ({
           </button>
         </div>
 
-        {/* Amount Field */}
+        {/* Amount Field with Calculator Helper */}
         <div>
-          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-            Amount ({settings.currency})
-          </label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+              Amount ({settings.currency})
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowCalcHelper((prev) => !prev)}
+              className="text-[11px] font-extrabold text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              <Calculator className="w-3.5 h-3.5 text-purple-500" />
+              {showCalcHelper ? 'Hide Udhar Calc' : '⚡ Udhar Item Calculator'}
+            </button>
+          </div>
+
           <div className="relative">
             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-slate-400 text-lg">
               {settings.currency}
@@ -216,9 +239,186 @@ export const TransactionFormScreen: React.FC<TransactionFormScreenProps> = ({
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0.00"
-              className="w-full pl-9 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-lg font-bold text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
+              className="w-full pl-9 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-lg font-bold text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500 font-mono"
             />
           </div>
+
+          {/* Inline Calculator Helper Box */}
+          {showCalcHelper && (
+            <div className="mt-2.5 p-3.5 bg-purple-50 dark:bg-purple-950/50 border border-purple-200 dark:border-purple-800 rounded-2xl space-y-3 animate-in fade-in zoom-in-95 duration-150">
+              <div className="flex items-center justify-between text-[11px] font-bold text-purple-900 dark:text-purple-300 pb-1.5 border-b border-purple-200/60 dark:border-purple-800/60">
+                <span className="flex items-center gap-1.5">
+                  <Calculator className="w-4 h-4 text-purple-500" /> POS Itemized Udhar Calculator
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowCalcHelper(false)}
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Add Item Row Inputs */}
+              <div className="space-y-2">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 block mb-0.5">Item Name (Optional)</label>
+                  <input
+                    type="text"
+                    value={calcItemName}
+                    onChange={(e) => setCalcItemName(e.target.value)}
+                    placeholder="e.g. Rice, Sugar, Milk, Oil"
+                    className="w-full p-2 bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 block mb-0.5">Item Price ({settings.currency})</label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={calcPrice}
+                      onChange={(e) => setCalcPrice(e.target.value)}
+                      placeholder="e.g. 50"
+                      className="w-full p-2 bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 block mb-0.5">Qty (Pcs / Kg)</label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={calcQty}
+                      onChange={(e) => setCalcQty(e.target.value)}
+                      placeholder="1"
+                      className="w-full p-2 bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white font-mono"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const price = parseFloat(calcPrice);
+                    const qty = parseFloat(calcQty) || 1;
+                    if (isNaN(price) || price <= 0) return;
+                    const name = calcItemName.trim() || `Item ${calcItemList.length + 1}`;
+                    const total = price * qty;
+                    setCalcItemList((prev) => [...prev, { name, price, qty, total }]);
+                    setCalcItemName('');
+                    setCalcPrice('');
+                    setCalcQty('1');
+                  }}
+                  className="w-full py-2 bg-purple-100 dark:bg-purple-900/60 hover:bg-purple-200 text-purple-700 dark:text-purple-300 font-extrabold text-xs rounded-xl border border-purple-300 dark:border-purple-700 cursor-pointer flex items-center justify-center gap-1"
+                >
+                  + Add Item to Udhar List
+                </button>
+              </div>
+
+              {/* Display Added Items List */}
+              {calcItemList.length > 0 && (
+                <div className="p-2.5 bg-white dark:bg-slate-900 rounded-xl border border-purple-200 dark:border-purple-800 space-y-1.5 max-h-32 overflow-y-auto text-xs">
+                  <span className="text-[10px] font-black uppercase text-purple-600 dark:text-purple-400 block pb-1 border-b border-purple-100 dark:border-purple-800">
+                    Added Items ({calcItemList.length})
+                  </span>
+                  {calcItemList.map((item, idx) => (
+                    <div key={idx} className="flex justify-between items-center text-[11px]">
+                      <span className="font-bold text-slate-800 dark:text-slate-200 truncate max-w-[170px]">
+                        {idx + 1}. {item.name} ({item.qty} × {settings.currency}{item.price})
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono font-black text-purple-600 dark:text-purple-400">
+                          {formatCurrency(item.total, settings.currency)}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setCalcItemList((prev) => prev.filter((_, i) => i !== idx))}
+                          className="text-slate-400 hover:text-rose-500"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="pt-1.5 border-t border-purple-100 dark:border-purple-800 flex justify-between font-black text-xs text-purple-900 dark:text-purple-200">
+                    <span>Items Total:</span>
+                    <span>{formatCurrency(calcItemList.reduce((sum, i) => sum + i.total, 0), settings.currency)}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Mode B: Additive Quick Math (e.g. 50 + 120 + 35) */}
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block mb-0.5">
+                  Or Quick Multi-Price Sum (e.g. 50 + 120 + 35)
+                </label>
+                <input
+                  type="text"
+                  value={calcExpression}
+                  onChange={(e) => setCalcExpression(e.target.value)}
+                  placeholder="e.g. 50 + 120 + 35"
+                  className="w-full p-2 bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-700 rounded-xl text-xs font-mono font-bold text-slate-900 dark:text-white"
+                />
+              </div>
+
+              {/* Apply Button */}
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    let itemsSum = calcItemList.reduce((sum, item) => sum + item.total, 0);
+                    const singlePrice = parseFloat(calcPrice) || 0;
+                    const singleQty = parseFloat(calcQty) || 1;
+                    if (singlePrice > 0) {
+                      itemsSum += singlePrice * singleQty;
+                    }
+
+                    let exprSum = 0;
+                    if (calcExpression.trim()) {
+                      try {
+                        exprSum = calcExpression
+                          .split('+')
+                          .map((val) => parseFloat(val.trim()) || 0)
+                          .reduce((acc, curr) => acc + curr, 0);
+                      } catch (err) {
+                        console.error('Calculation error', err);
+                      }
+                    }
+
+                    const grandTotal = itemsSum + exprSum;
+
+                    if (grandTotal > 0) {
+                      setAmount(grandTotal.toString());
+
+                      // Build formatted notes string
+                      const itemStrings: string[] = [];
+                      calcItemList.forEach((item, idx) => {
+                        itemStrings.push(`${idx + 1}. ${item.name} (${item.qty}x${settings.currency}${item.price}=${settings.currency}${item.total})`);
+                      });
+                      if (singlePrice > 0) {
+                        const name = calcItemName.trim() || `Item ${calcItemList.length + 1}`;
+                        itemStrings.push(`${calcItemList.length + 1}. ${name} (${singleQty}x${settings.currency}${singlePrice}=${settings.currency}${singlePrice * singleQty})`);
+                      }
+                      if (calcExpression.trim()) {
+                        itemStrings.push(`Prices: (${calcExpression})`);
+                      }
+
+                      if (itemStrings.length > 0) {
+                        setNotes(itemStrings.join('\n'));
+                      }
+
+                      setShowCalcHelper(false);
+                      showToast('Udhar Amount & Items Set', `Total: ${formatCurrency(grandTotal, settings.currency)}`);
+                    }
+                  }}
+                  className="flex-1 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <CheckCircle2 className="w-4 h-4" /> APPLY TOTAL & AUTO-FILL NOTES
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Specific Fields for Credit Sale & Credit Payment */}
@@ -540,14 +740,17 @@ export const TransactionFormScreen: React.FC<TransactionFormScreenProps> = ({
                     : savedTxForMsg.type === 'credit_payment'
                     ? 'Udhar payment'
                     : 'Transaction';
-                const msgText = `Greetings from ${store}! Your ${typeLabel} of ${settings.currency}${savedTxForMsg.amount} on ${savedTxForMsg.date} has been recorded. Thank you!`;
+                const notesBlock = savedTxForMsg.notes
+                  ? `\n\n📦 Item Breakdown:\n${savedTxForMsg.notes}\n`
+                  : '';
+                const msgText = `Greetings ${savedTxForMsg.customerName} from ${store}!\nYour ${typeLabel} of ${settings.currency}${savedTxForMsg.amount} on ${savedTxForMsg.date} has been recorded.${notesBlock}\nTotal Bill Amount: ${settings.currency}${savedTxForMsg.amount}\nThank you!`;
                 const cleanPhone = savedTxForMsg.phone ? savedTxForMsg.phone.replace(/[^0-9]/g, '') : '';
                 const waPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
 
                 return (
                   <div className="space-y-3">
-                    <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-mono">
-                      "{msgText}"
+                    <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-mono whitespace-pre-wrap">
+                      {msgText}
                     </div>
 
                     <div className="grid grid-cols-2 gap-2">

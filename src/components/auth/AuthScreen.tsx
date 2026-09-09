@@ -8,9 +8,6 @@ import {
   User,
   Sparkles,
   Store,
-  Wallet,
-  Coins,
-  ArrowRight,
   Smartphone,
   CheckCircle2,
   RefreshCw,
@@ -43,7 +40,7 @@ export const AuthScreen: React.FC = () => {
   const [regOwnerName, setRegOwnerName] = useState('Ayesha');
   const [regMobile, setRegMobile] = useState('9876543210');
   const [regSyncCode, setRegSyncCode] = useState(`STORE-${Math.floor(1000 + Math.random() * 9000)}`);
-  const [regUserName, setRegUserName] = useState('Owner / Ayesha');
+  const [regUserName] = useState('Owner / Ayesha');
   const [regOpeningCash, setRegOpeningCash] = useState('5000');
   const [regInvestedAmount, setRegInvestedAmount] = useState('25000');
   const [regOtpSent, setRegOtpSent] = useState(false);
